@@ -104,6 +104,7 @@ def ts_to_dt(v):
 
 @st.cache_data(ttl=60)
 def load_lots(store_id: str) -> pd.DataFrame:
+    """Charge les lots depuis /lots/ avec les vrais champs"""
     lots = []
     try:
         # Charger directement depuis /lots/ collection
@@ -111,21 +112,23 @@ def load_lots(store_id: str) -> pd.DataFrame:
             d = doc.to_dict()
             d["id"] = doc.id
             
-            # Gérer différents noms de champs possibles
-            d["expiryDate"] = ts_to_dt(d.get("expiryDate") or d.get("dlc") or d.get("end_date"))
-            d["productId"] = d.get("productId") or d.get("product_ean") or d.get("product_name") or ""
-            d["lotNumber"] = d.get("lotNumber") or d.get("lot_code") or d.get("lot_number") or ""
-            d["quantity"] = d.get("quantity") or d.get("qty_current") or d.get("qty") or 0
-            d["location"] = d.get("location") or d.get("position") or ""
+            # Mapper les vrais champs aux champs attendus
+            d["expiryDate"] = d.get("dlc")  # dlc = date limite de consommation
+            d["productId"] = d.get("product_ean")  # product_ean = EAN du produit
+            d["lotNumber"] = d.get("lot_code")  # lot_code = code du lot
+            d["quantity"] = d.get("qty_current", 0)  # qty_current = quantité actuelle
+            d["location"] = d.get("location", "")  # location = rayon
             
-            lots.append(d)
+            # Filtrer par magasin si nécessaire
+            if d.get("store_id") == store_id or not store_id:
+                lots.append(d)
             
     except Exception as e:
         st.error(f"❌ Erreur chargement lots: {str(e)}")
         return pd.DataFrame(columns=["id", "productId", "lotNumber", "quantity", "expiryDate", "location"])
     
     if not lots:
-        st.info("ℹ️ Aucun lot trouvé dans la base de données")
+        st.info(f"ℹ️ Aucun lot trouvé pour le magasin: {store_id}")
         return pd.DataFrame(columns=["id", "productId", "lotNumber", "quantity", "expiryDate", "location"])
     
     df = pd.DataFrame(lots)
