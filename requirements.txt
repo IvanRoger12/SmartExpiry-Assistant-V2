@@ -1,6 +1,7 @@
-streamlit
-firebase-admin
-google-cloud-firestore
-pandas
-plotly
-python-dateutil
+streamlit==1.39.0
+firebase-admin==6.6.0
+google-cloud-firestore==2.15.0
+pandas==2.2.2
+plotly==5.24.1
+python-dateutil==2.9.0.post0
+pytz==2025.1
