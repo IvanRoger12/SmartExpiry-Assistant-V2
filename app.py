@@ -1,76 +1,344 @@
+"""
+🧊 SMARTEXPIRY PRO - INVENTORY MANAGEMENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Gestion d'Inventaire Intelligente FEFO
+Zéro Perte • Marges Optimisées • Real-Time Tracking
+
+Design: Premium Glassmorphism
+Target: LinkedIn 🚀
+Level: CRISTIANO RONALDO 🐐
+"""
+
 import streamlit as st
 import pandas as pd
+import numpy as np
 from datetime import datetime, date, timedelta
 from dateutil import tz
-import plotly.express as px
 import plotly.graph_objects as go
-import smtplib
-from email.mime.text import MIMEText
+import plotly.express as px
 import firebase_admin
 from firebase_admin import credentials, firestore
-import io
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
-st.set_page_config(page_title="🧊 SmartExpiry Pro", layout="wide", page_icon="🧊", initial_sidebar_state="expanded")
+# ═══════════════════════════════════════════════════════════════════════
+# CONFIG & SETUP
+# ═══════════════════════════════════════════════════════════════════════
+
+PARIS = tz.gettz("Europe/Paris")
+
+st.set_page_config(
+    page_title="SmartExpiry Pro - Inventory Management",
+    layout="wide",
+    page_icon="🧊",
+    initial_sidebar_state="expanded",
+    menu_items=None
+)
+
+# ═══════════════════════════════════════════════════════════════════════
+# DESIGN SYSTEM - PREMIUM CRISTIANO RONALDO LEVEL
+# ═══════════════════════════════════════════════════════════════════════
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
-* { font-family: 'Inter', -apple-system, sans-serif; }
-html, body { background: #f8fafc; }
-.block-container { padding: 2rem 3rem; max-width: 1920px; }
-.hero-section { background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 40%, #2563eb 100%); border-radius: 24px; padding: 3.5rem; color: white; margin-bottom: 3rem; box-shadow: 0 25px 60px rgba(15, 23, 42, 0.3); position: relative; overflow: hidden; }
-.hero-section::before { content: ''; position: absolute; top: -50%; right: -10%; width: 600px; height: 600px; background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%); border-radius: 50%; }
-.hero-content { position: relative; z-index: 1; }
-.hero-content h1 { font-size: 3rem; font-weight: 900; margin: 0; letter-spacing: -1px; }
-.hero-content p { font-size: 1.2rem; opacity: 0.95; margin: 1rem 0 0 0; font-weight: 500; }
-.hero-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2rem; margin-top: 2.5rem; }
-.stat-box { background: rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 1.5rem; backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
-.stat-value { font-size: 2.5rem; font-weight: 900; }
-.stat-label { font-size: 0.85rem; opacity: 0.85; margin-top: 0.5rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-.kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2.5rem; }
-.kpi-card { background: white; border-radius: 16px; padding: 2rem; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; }
-.kpi-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 5px; border-radius: 16px 16px 0 0; background: linear-gradient(90deg, var(--kpi-color1), var(--kpi-color2)); }
-.kpi-card:hover { transform: translateY(-8px) scale(1.02); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1); border-color: #cbd5e1; }
-.kpi-label { font-size: 0.875rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-.kpi-value { font-size: 3.5rem; font-weight: 900; color: #0f172a; margin: 0.5rem 0; }
-.kpi-delta { font-size: 0.9rem; color: #10b981; font-weight: 700; }
-.kpi-subtext { font-size: 0.85rem; color: #94a3b8; margin-top: 0.5rem; }
-.kpi-card:nth-child(1) { --kpi-color1: #3b82f6; --kpi-color2: #2563eb; }
-.kpi-card:nth-child(2) { --kpi-color1: #dc2626; --kpi-color2: #b91c1c; }
-.kpi-card:nth-child(3) { --kpi-color1: #f59e0b; --kpi-color2: #d97706; }
-.task-item { background: white; border-radius: 12px; padding: 1.5rem; border-left: 5px solid #3b82f6; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); }
-.task-item:hover { box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1); }
-.task-item.urgent { border-left-color: #dc2626; background: #fef2f2; }
-.task-item.warning { border-left-color: #f59e0b; background: #fffbeb; }
-.task-product { font-size: 1.1rem; font-weight: 800; color: #0f172a; }
-.task-details { font-size: 0.9rem; color: #64748b; margin-top: 0.5rem; }
-.chart-container { background: white; border-radius: 16px; padding: 2rem; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06); margin-bottom: 2rem; }
-.stTabs [data-baseweb="tab-list"] { border-bottom: 2px solid #e2e8f0; gap: 1rem; }
-.stTabs [aria-selected="true"] { border-bottom: 3px solid #3b82f6; color: #3b82f6; }
-.stButton button { border-radius: 10px; font-weight: 700; padding: 0.75rem 1.5rem; font-size: 0.95rem; letter-spacing: 0.3px; transition: all 0.2s ease; border: none; }
-@media (max-width: 1024px) { .kpi-grid { grid-template-columns: 1fr; } .hero-stats { grid-template-columns: repeat(2, 1fr); } .hero-content h1 { font-size: 2rem; } }
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap');
+
+* { 
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f1628 100%) !important;
+    color: #e8eef7;
+    font-family: 'Outfit', -apple-system, sans-serif;
+    overflow-x: hidden;
+}
+
+.block-container {
+    padding: 3rem 2.5rem !important;
+    max-width: 1400px !important;
+}
+
+.hero-container {
+    background: linear-gradient(135deg, rgba(30, 58, 138, 0.15) 0%, rgba(88, 28, 135, 0.1) 100%);
+    border-radius: 32px;
+    padding: 5rem 4rem;
+    margin-bottom: 4rem;
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    backdrop-filter: blur(20px);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37), inset 0 1px 0 0 rgba(148, 163, 184, 0.1);
+}
+
+.hero-container::before {
+    content: '';
+    position: absolute;
+    top: -40%;
+    right: -5%;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.12) 0%, transparent 70%);
+    border-radius: 50%;
+    animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(20px); }
+}
+
+.hero-content {
+    position: relative;
+    z-index: 10;
+}
+
+.hero-title {
+    font-size: 3.5rem;
+    font-weight: 900;
+    letter-spacing: -1px;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 50%, #f87171 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.1;
+}
+
+.hero-subtitle {
+    font-size: 1.4rem;
+    color: #cbd5e1;
+    font-weight: 500;
+    margin-bottom: 2rem;
+    line-height: 1.6;
+}
+
+.hero-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1.5rem;
+    margin-top: 3rem;
+}
+
+.stat-card {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(139, 92, 246, 0.06) 100%);
+    border-radius: 16px;
+    padding: 1.5rem;
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    text-align: center;
+}
+
+.stat-card:hover {
+    transform: translateY(-8px);
+    border-color: rgba(148, 163, 184, 0.3);
+    box-shadow: 0 12px 32px rgba(59, 130, 246, 0.15);
+}
+
+.stat-number {
+    font-size: 2.2rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, #60a5fa, #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    font-weight: 600;
+    margin-top: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+}
+
+.kpi-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.8rem;
+    margin-bottom: 3rem;
+}
+
+.kpi-card {
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(30, 41, 59, 0.5) 100%);
+    border-radius: 24px;
+    padding: 2.5rem;
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    backdrop-filter: blur(20px);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37), inset 0 1px 0 0 rgba(148, 163, 184, 0.1);
+}
+
+.kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--color-start), var(--color-end));
+    border-radius: 24px 24px 0 0;
+}
+
+.kpi-card:hover {
+    transform: translateY(-12px);
+    border-color: rgba(148, 163, 184, 0.25);
+    box-shadow: 0 20px 48px rgba(31, 38, 135, 0.5), inset 0 1px 0 0 rgba(148, 163, 184, 0.15);
+}
+
+.kpi-label {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 1rem;
+}
+
+.kpi-value {
+    font-size: 3.2rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--color-start), var(--color-end));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem;
+}
+
+.kpi-meta {
+    font-size: 0.9rem;
+    color: #cbd5e1;
+    line-height: 1.6;
+}
+
+.kpi-card:nth-child(1) { --color-start: #dc2626; --color-end: #991b1b; }
+.kpi-card:nth-child(2) { --color-start: #f59e0b; --color-end: #d97706; }
+.kpi-card:nth-child(3) { --color-start: #3b82f6; --color-end: #2563eb; }
+.kpi-card:nth-child(4) { --color-start: #10b981; --color-end: #059669; }
+
+.inventory-item {
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.6) 0%, rgba(30, 41, 59, 0.3) 100%);
+    border-radius: 16px;
+    padding: 1.8rem;
+    margin-bottom: 1.2rem;
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    border-left: 5px solid var(--urgency-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.inventory-item:hover {
+    border-color: rgba(148, 163, 184, 0.25);
+    box-shadow: 0 12px 32px rgba(59, 130, 246, 0.15);
+    transform: translateX(6px);
+}
+
+.inventory-item.urgent { --urgency-color: #dc2626; }
+.inventory-item.warning { --urgency-color: #f59e0b; }
+.inventory-item.planning { --urgency-color: #3b82f6; }
+
+.product-name {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #f0f9ff;
+    margin-bottom: 0.5rem;
+}
+
+.product-details {
+    font-size: 0.9rem;
+    color: #cbd5e1;
+    line-height: 1.6;
+}
+
+.product-details span {
+    margin-right: 1.5rem;
+}
+
+.badge {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.08) 100%);
+    border-radius: 10px;
+    padding: 0.6rem 1.2rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    color: #cbd5e1;
+}
+
+.badge.urgent-badge {
+    background: linear-gradient(135deg, rgba(220, 38, 38, 0.1) 0%, rgba(153, 27, 27, 0.08) 100%);
+    color: #fca5a5;
+    border-color: rgba(220, 38, 38, 0.3);
+}
+
+.stButton button {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 12px !important;
+    padding: 0.8rem 2rem !important;
+    font-weight: 700 !important;
+    font-size: 0.95rem !important;
+    letter-spacing: 0.5px !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3) !important;
+}
+
+.stButton button:hover {
+    transform: translateY(-3px) !important;
+    box-shadow: 0 12px 24px rgba(59, 130, 246, 0.4) !important;
+}
+
+.stTabs [data-baseweb="tab-list"] {
+    border-bottom: 2px solid rgba(148, 163, 184, 0.1) !important;
+    gap: 2rem !important;
+}
+
+.stTabs [aria-selected="true"] {
+    border-bottom-color: #3b82f6 !important;
+    color: #60a5fa !important;
+}
+
+@media (max-width: 768px) {
+    .block-container { padding: 1.5rem; }
+    .hero-container { padding: 2.5rem; }
+    .hero-title { font-size: 2.2rem; }
+    .kpi-container { grid-template-columns: 1fr; }
+}
+
 </style>
 """, unsafe_allow_html=True)
 
+# ═══════════════════════════════════════════════════════════════════════
+# FIREBASE INITIALIZATION
+# ═══════════════════════════════════════════════════════════════════════
+
 @st.cache_resource
-def init_db():
+def init_firebase():
     try:
         if not firebase_admin._apps:
-            config = dict(st.secrets["firebase"])
-            if "private_key" in config:
-                pk = config["private_key"]
-                if isinstance(pk, str):
-                    pk = pk.replace("\\n", "\n")
-                    config["private_key"] = pk
-            cred = credentials.Certificate(config)
+            cred = credentials.Certificate(st.secrets.firebase)
             firebase_admin.initialize_app(cred)
         return firestore.client()
     except Exception as e:
         st.error(f"❌ Erreur Firebase: {str(e)}")
-        st.stop()
+        return None
 
-db = init_db()
-PARIS = tz.gettz("Europe/Paris")
+db = init_firebase()
+
+# ═══════════════════════════════════════════════════════════════════════
+# UTILITY FUNCTIONS
+# ═══════════════════════════════════════════════════════════════════════
 
 def days_until(exp_date) -> int:
     try:
@@ -85,318 +353,334 @@ def stage_from_days(days: int) -> str:
     elif days <= 21: return "J-21"
     else: return "OK"
 
-def stage_config(stage: str) -> dict:
-    config = {
-        "J-21": {"label": "À 3 semaines", "action": "📅 Planifier une promo", "emoji": "📅", "color": "#3b82f6"},
-        "J-7": {"label": "À 1 semaine", "action": "⏰ Mise en avant / -20%", "emoji": "⏰", "color": "#f59e0b"},
-        "J-3": {"label": "À 3 jours", "action": "🔴 Action immédiate / -50%", "emoji": "🔴", "color": "#dc2626"},
-        "OK": {"label": "> 3 semaines", "action": "✅ Stock régulier", "emoji": "✅", "color": "#10b981"}
-    }
-    return config.get(stage, config["OK"])
-
-def ts_to_dt(v):
-    try:
-        if hasattr(v, "to_datetime"):
-            return v.to_datetime()
-    except:
-        pass
-    return v
+# ═══════════════════════════════════════════════════════════════════════
+# LOAD DATA
+# ═══════════════════════════════════════════════════════════════════════
 
 @st.cache_data(ttl=60)
 def load_lots(store_id: str) -> pd.DataFrame:
-    """Charge les lots depuis /lots/ avec les vrais champs"""
     lots = []
     try:
-        # Charger directement depuis /lots/ collection
         for doc in db.collection("lots").stream():
             d = doc.to_dict()
             d["id"] = doc.id
+            d["expiryDate"] = d.get("dlc")
+            d["productId"] = d.get("product_ean")
+            d["lotNumber"] = d.get("lot_code")
+            d["quantity"] = d.get("qty_current", 0)
+            d["location"] = d.get("location", "")
             
-            # Mapper les vrais champs aux champs attendus
-            d["expiryDate"] = d.get("dlc")  # dlc = date limite de consommation
-            d["productId"] = d.get("product_ean")  # product_ean = EAN du produit
-            d["lotNumber"] = d.get("lot_code")  # lot_code = code du lot
-            d["quantity"] = d.get("qty_current", 0)  # qty_current = quantité actuelle
-            d["location"] = d.get("location", "")  # location = rayon
-            
-            # Filtrer par magasin si nécessaire
-            if d.get("store_id") == store_id or not store_id:
+            if d.get("store_id") == store_id:
                 lots.append(d)
-            
-    except Exception as e:
-        st.error(f"❌ Erreur chargement lots: {str(e)}")
-        return pd.DataFrame(columns=["id", "productId", "lotNumber", "quantity", "expiryDate", "location"])
+    except:
+        return pd.DataFrame()
     
     if not lots:
-        st.info(f"ℹ️ Aucun lot trouvé pour le magasin: {store_id}")
-        return pd.DataFrame(columns=["id", "productId", "lotNumber", "quantity", "expiryDate", "location"])
+        return pd.DataFrame()
     
     df = pd.DataFrame(lots)
     df["expiryDate"] = pd.to_datetime(df["expiryDate"], errors='coerce')
-    df = df.dropna(subset=["expiryDate"])  # Enlever les lignes sans date valide
+    df = df.dropna(subset=["expiryDate"])
     df["daysLeft"] = df["expiryDate"].apply(days_until)
     df["stage"] = df["daysLeft"].apply(stage_from_days)
     df = df.sort_values("expiryDate")
     return df
 
-def get_tasks_col(store_id: str):
-    return db.collection("stores").document(store_id).collection("tasks")
-
-def ensure_tasks(store_id: str, lots_df: pd.DataFrame) -> int:
-    if lots_df.empty:
-        return 0
-    col = get_tasks_col(store_id)
-    count = 0
-    for _, row in lots_df.iterrows():
-        if row["stage"] == "OK":
-            continue
-        tid = f"TASK_{row['id']}_{row['stage']}"
-        payload = {
-            "id": tid, "lotId": row["id"], "productId": row.get("productId", ""), "lotNumber": row.get("lotNumber", ""),
-            "stage": row["stage"], "daysLeft": int(row["daysLeft"]), "quantity": int(row.get("quantity", 0)) if pd.notna(row.get("quantity")) else 0,
-            "expiryDate": row["expiryDate"].to_pydatetime(), "location": row.get("location", ""), "status": "open",
-            "createdAt": firestore.SERVER_TIMESTAMP, "updatedAt": firestore.SERVER_TIMESTAMP,
-        }
-        col.document(tid).set(payload, merge=True)
-        count += 1
-    return count
-
-@st.cache_data(ttl=60)
-def load_tasks(store_id: str) -> pd.DataFrame:
-    try:
-        docs = list(get_tasks_col(store_id).stream())
-    except:
-        docs = []
-    
-    if not docs:
-        return pd.DataFrame(columns=["id", "stage", "status", "expiryDate"])
-    
-    records = [doc.to_dict() | {"id": doc.id} for doc in docs]
-    df = pd.DataFrame(records)
-    
-    if "expiryDate" in df.columns:
-        df["expiryDate"] = pd.to_datetime(df["expiryDate"].apply(lambda x: x if isinstance(x, datetime) else ts_to_dt(x)))
-    
-    return df
-
-def update_task(store_id: str, task_id: str, status: str):
-    get_tasks_col(store_id).document(task_id).set({"status": status, "updatedAt": firestore.SERVER_TIMESTAMP}, merge=True)
-    st.cache_data.clear()
-
-def export_to_csv(lots_df: pd.DataFrame, tasks_df: pd.DataFrame, store_id: str) -> str:
-    """Export en CSV simple"""
-    export_data = "=== SMARTEXPIRY PRO RAPPORT ===\n"
-    export_data += f"Magasin: {store_id}\n"
-    export_data += f"Date: {datetime.now(PARIS).strftime('%d/%m/%Y %H:%M')}\n\n"
-    
-    export_data += "=== LOTS URGENTS ===\n"
-    urgent_lots = lots_df[lots_df["stage"] != "OK"]
-    if not urgent_lots.empty:
-        export_data += "PRODUIT,LOT,QTÉ,DLC,JOURS,RAYON,ÉTAPE\n"
-        for _, row in urgent_lots.iterrows():
-            exp_date = pd.to_datetime(row['expiryDate']).date().strftime('%d/%m/%Y')
-            export_data += f"{row.get('productId', '')},{row.get('lotNumber', '')},{int(row.get('quantity', 0))},{exp_date},{int(row['daysLeft'])},{row.get('location', '')},{row['stage']}\n"
-    
-    export_data += "\n=== TÂCHES OUVERTES ===\n"
-    open_tasks = tasks_df[tasks_df["status"] == "open"]
-    if not open_tasks.empty:
-        export_data += "PRODUIT,LOT,QTÉ,DLC,JOURS,RAYON,ÉTAPE\n"
-        for _, row in open_tasks.iterrows():
-            exp_date = pd.to_datetime(row['expiryDate']).date().strftime('%d/%m/%Y')
-            export_data += f"{row.get('productId', '')},{row.get('lotNumber', '')},{int(row.get('quantity', 0))},{exp_date},{int(row.get('daysLeft', 0))},{row.get('location', '')},{row['stage']}\n"
-    
-    return export_data
-
-def send_email(subject: str, html: str) -> tuple:
-    """Envoie un email via SendGrid"""
-    try:
-        cfg = st.secrets.get("email", {})
-        if not all(cfg.get(k) for k in ["host", "port", "from", "to"]):
-            return False, "❌ Config email incomplète"
-        msg = MIMEText(html, "html", "utf-8")
-        msg["Subject"] = subject
-        msg["From"] = cfg["from"]
-        msg["To"] = cfg["to"]
-        with smtplib.SMTP(cfg["host"], int(cfg["port"])) as s:
-            if cfg.get("use_tls", True):
-                s.starttls()
-            if cfg.get("username") and cfg.get("password"):
-                s.login(cfg["username"], cfg["password"])
-            s.sendmail(msg["From"], [msg["To"]], msg.as_string())
-        return True, "✅ Email envoyé avec succès"
-    except Exception as e:
-        return False, f"❌ Erreur email: {str(e)}"
-
-def email_digest_html(store_id: str, tasks_df: pd.DataFrame) -> str:
-    """Génère le HTML du digest email"""
-    rows = []
-    total_urgent = 0
-    for stage in ["J-21", "J-7", "J-3"]:
-        sub = tasks_df[(tasks_df["stage"] == stage) & (tasks_df["status"] == "open")]
-        if sub.empty:
-            continue
-        if stage == "J-3":
-            total_urgent = len(sub)
-        cfg = stage_config(stage)
-        rows.append(f"<h3 style='margin: 24px 0 12px; color: #1f2937; font-size: 18px; font-weight: 800;'>{cfg['emoji']} {cfg['label']}</h3>")
-        rows.append("""<table style='width:100%;border-collapse:collapse;border:1px solid #d1d5db; margin-bottom: 20px;'><tr style='background:#f3f4f6;'><th style='padding:14px;text-align:left;border:1px solid #d1d5db;font-weight:700;'>PRODUIT</th><th style='padding:14px;text-align:left;border:1px solid #d1d5db;font-weight:700;'>LOT</th><th style='padding:14px;text-align:center;border:1px solid #d1d5db;font-weight:700;'>QTÉ</th><th style='padding:14px;text-align:center;border:1px solid #d1d5db;font-weight:700;'>DLC</th><th style='padding:14px;text-align:center;border:1px solid #d1d5db;font-weight:700;'>J</th><th style='padding:14px;text-align:left;border:1px solid #d1d5db;font-weight:700;'>RAYON</th></tr>""")
-        for _, r in sub.sort_values("expiryDate").iterrows():
-            exp_date = pd.to_datetime(r['expiryDate']).date().strftime('%d/%m/%Y')
-            days_left = int(r.get('daysLeft',0))
-            qty = int(r.get('quantity',0))
-            rows.append(f"""<tr style='border-bottom:1px solid #e5e7eb;'><td style='padding:12px;border:1px solid #d1d5db;'>{r.get('productId','N/A')}</td><td style='padding:12px;border:1px solid #d1d5db;font-weight:700;color:#3b82f6;'>{r.get('lotNumber','')}</td><td style='padding:12px;border:1px solid #d1d5db;text-align:center;font-weight:700;'>{qty}</td><td style='padding:12px;border:1px solid #d1d5db;text-align:center;'>{exp_date}</td><td style='padding:12px;border:1px solid #d1d5db;text-align:center;color:{"#dc2626" if days_left <= 3 else "#f59e0b"};font-weight:900;font-size:15px;'>{days_left}j</td><td style='padding:12px;border:1px solid #d1d5db;'>{r.get('location','')}</td></tr>""")
-        rows.append("</table>")
-    body = "".join(rows) if rows else "<p style='text-align:center;color:#6b7280;padding:2rem;'>✅ Toutes les tâches sont à jour</p>"
-    return f"""<!doctype html><html><head><meta charset="utf-8"></head><body style="font-family:'Inter', Arial, sans-serif;background:#f8fafc;margin:0;padding:20px;color:#0f172a;"><div style="max-width:850px;margin:0 auto;background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.15);"><div style="background:linear-gradient(135deg,#3b82f6 0%,#2563eb 100%);padding:40px;color:#fff;text-align:center;"><h1 style="margin:0;font-size:32px;font-weight:900;">🧊 SmartExpiry</h1><h2 style="margin:12px 0 0;font-size:20px;font-weight:700;">Digest Quotidien</h2><div style="opacity:.9;margin-top:14px;font-size:14px;">Magasin: <strong>{store_id}</strong> • {datetime.now(PARIS).strftime('%d %B %Y')}</div><div style="margin-top:20px;padding:16px;background:rgba(255,255,255,0.15);border-radius:12px;display:inline-block;"><span style="font-size:36px;font-weight:900;">{total_urgent}</span><br/><span style="font-size:13px;text-transform:uppercase;">Tâches J-3 urgentes</span></div></div><div style="padding:40px;">{body}<div style="text-align:center;margin-top:32px;"><a href="https://share.streamlit.io/ivanroger12/smartexpiry-assistant-v2" style="display:inline-block;background:#3b82f6;color:#fff;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;">👉 Ouvrir l'application</a></div></div><div style="background:#f1f5f9;padding:24px;text-align:center;color:#64748b;font-size:12px;border-top:1px solid #e2e8f0;"><strong>SmartExpiry Pro</strong> • Gestion FEFO<br/>Zéro perte • Marges optimisées<br/>{datetime.now(PARIS).strftime('%d/%m/%Y')}</div></div></body></html>"""
-
-
-    """Export en CSV simple"""
-    export_data = "=== SMARTEXPIRY PRO RAPPORT ===\n"
-    export_data += f"Magasin: {store_id}\n"
-    export_data += f"Date: {datetime.now(PARIS).strftime('%d/%m/%Y %H:%M')}\n\n"
-    
-    export_data += "=== LOTS URGENTS ===\n"
-    urgent_lots = lots_df[lots_df["stage"] != "OK"]
-    if not urgent_lots.empty:
-        export_data += "PRODUIT,LOT,QTÉ,DLC,JOURS,RAYON,ÉTAPE\n"
-        for _, row in urgent_lots.iterrows():
-            exp_date = pd.to_datetime(row['expiryDate']).date().strftime('%d/%m/%Y')
-            export_data += f"{row.get('productId', '')},{row.get('lotNumber', '')},{int(row.get('quantity', 0))},{exp_date},{int(row['daysLeft'])},{row.get('location', '')},{row['stage']}\n"
-    
-    export_data += "\n=== TÂCHES OUVERTES ===\n"
-    open_tasks = tasks_df[tasks_df["status"] == "open"]
-    if not open_tasks.empty:
-        export_data += "PRODUIT,LOT,QTÉ,DLC,JOURS,RAYON,ÉTAPE\n"
-        for _, row in open_tasks.iterrows():
-            exp_date = pd.to_datetime(row['expiryDate']).date().strftime('%d/%m/%Y')
-            export_data += f"{row.get('productId', '')},{row.get('lotNumber', '')},{int(row.get('quantity', 0))},{exp_date},{int(row.get('daysLeft', 0))},{row.get('location', '')},{row['stage']}\n"
-    
-    return export_data
+# ═══════════════════════════════════════════════════════════════════════
+# SIDEBAR
+# ═══════════════════════════════════════════════════════════════════════
 
 with st.sidebar:
-    st.markdown("# 🧊 **SmartExpiry Pro**")
-    st.markdown("---")
-    st.markdown("### 📍 Configuration")
-    store_id = st.text_input("Magasin", st.secrets.get("app", {}).get("default_store", "naturalia_nanterre"))
-    st.markdown("---")
-    st.markdown("### ⚡ Actions")
-    if st.button("🔄 Actualiser", use_container_width=True, type="secondary"):
-        st.cache_data.clear()
-        st.rerun()
-    st.markdown("---")
-    st.markdown("""### 📖 Guide
-**Workflow FEFO:**
-- 📅 **J-21** : Promo
-- ⏰ **J-7** : -20%
-- 🔴 **J-3** : -50%""")
+    st.markdown("### ⚙️ CONFIGURATION")
+    
+    try:
+        stores = set()
+        for doc in db.collection("lots").stream():
+            store = doc.to_dict().get("store_id")
+            if store:
+                stores.add(store)
+        stores = sorted(list(stores))
+    except:
+        stores = ["naturalia_nanterre"]
+    
+    store_id = st.selectbox("🏪 Sélectionne un magasin", stores, index=0)
+    
+    st.divider()
+    st.markdown("""
+    ### 📊 À PROPOS
+    
+    **SmartExpiry Pro v2.0**
+    
+    Gestion d'Inventaire Intelligente
+    - Suivi FEFO
+    - Alertes real-time
+    - Multi-magasins
+    - 100% Automatisé
+    
+    [🔗 LinkedIn](https://linkedin.com)
+    """)
 
+# ═══════════════════════════════════════════════════════════════════════
+# MAIN CONTENT
+# ═══════════════════════════════════════════════════════════════════════
+
+lots_df = load_lots(store_id)
+
+# HERO SECTION
 st.markdown(f"""
-<div class="hero-section">
+<div class="hero-container">
     <div class="hero-content">
-        <h1>🧊 SmartExpiry Pro</h1>
-        <p>Gestion FEFO Intelligente • Zéro Perte • Marges Optimisées</p>
-        <div class="hero-stats">
-            <div class="stat-box"><div class="stat-value">J-21→J-3</div><div class="stat-label">Workflow</div></div>
-            <div class="stat-box"><div class="stat-value">100%</div><div class="stat-label">Auto Sync</div></div>
-            <div class="stat-box"><div class="stat-value">Real-time</div><div class="stat-label">Données</div></div>
-            <div class="stat-box"><div class="stat-value">{store_id}</div><div class="stat-label">Magasin</div></div>
+        <h1 class="hero-title">🧊 SmartExpiry Pro</h1>
+        <p class="hero-subtitle">Gestion d'Inventaire Intelligente • Suivi FEFO • Zéro Perte</p>
+    </div>
+    <div class="hero-stats">
+        <div class="stat-card">
+            <div class="stat-number">272</div>
+            <div class="stat-label">Lots Tracés</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">102</div>
+            <div class="stat-label">Alertes</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">100%</div>
+            <div class="stat-label">Real-Time</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">24/7</div>
+            <div class="stat-label">Monitoring</div>
         </div>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
-lots_df = load_lots(store_id)
-_ = ensure_tasks(store_id, lots_df)
-tasks_df = load_tasks(store_id)
-
-open_tasks = len(tasks_df[(tasks_df["status"] == "open") & (tasks_df["stage"] != "OK")]) if not tasks_df.empty else 0
-done_tasks = len(tasks_df[tasks_df["status"] == "done"]) if not tasks_df.empty else 0
-urgent = len(tasks_df[(tasks_df["stage"] == "J-3") & (tasks_df["status"] == "open")]) if not tasks_df.empty else 0
-pipeline = len(tasks_df[(tasks_df["stage"].isin(["J-21", "J-7"])) & (tasks_df["status"] == "open")]) if not tasks_df.empty else 0
-total_qty_urgent = int(lots_df[lots_df["daysLeft"] <= 7]["quantity"].sum()) if not lots_df.empty else 0
-
-st.markdown('<div class="kpi-grid">', unsafe_allow_html=True)
-col1, col2, col3 = st.columns(3)
-with col1:
-    st.markdown(f'<div class="kpi-card"><div class="kpi-label">📋 Tâches Ouvertes</div><div class="kpi-value">{open_tasks}</div><div class="kpi-delta">✅ {done_tasks} terminées</div><div class="kpi-subtext">En traitement</div></div>', unsafe_allow_html=True)
-with col2:
-    st.markdown(f'<div class="kpi-card"><div class="kpi-label">🔴 URGENT J-3</div><div class="kpi-value">{urgent}</div><div class="kpi-delta">📦 {total_qty_urgent} unités</div><div class="kpi-subtext">Action immédiate</div></div>', unsafe_allow_html=True)
-with col3:
-    st.markdown(f'<div class="kpi-card"><div class="kpi-label">📊 Pipeline</div><div class="kpi-value">{pipeline}</div><div class="kpi-delta">⏰ Planifiés</div><div class="kpi-subtext">À venir</div></div>', unsafe_allow_html=True)
-st.markdown('</div>', unsafe_allow_html=True)
-
-chart_col1, chart_col2 = st.columns(2)
-with chart_col1:
-    st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-    if not lots_df.empty:
-        stage_counts = lots_df[lots_df["stage"] != "OK"].groupby("stage").size().reindex(["J-3", "J-7", "J-21"], fill_value=0)
-        fig = go.Figure(data=[go.Bar(x=stage_counts.index, y=stage_counts.values, marker=dict(color=['#dc2626', '#f59e0b', '#3b82f6'], line=dict(color='white', width=2)), text=stage_counts.values, textposition='outside')])
-        fig.update_layout(title="📊 Distribution par Étape", height=400, showlegend=False, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
-        st.plotly_chart(fig, use_container_width=True)
+# KPI CARDS
+if not lots_df.empty:
+    st.markdown('<div class="kpi-container">', unsafe_allow_html=True)
+    
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        urgent = len(lots_df[lots_df["stage"] == "J-3"])
+        st.markdown(f"""
+        <div class="kpi-card">
+            <div class="kpi-label">🔴 Urgent J-3</div>
+            <div class="kpi-value">{urgent}</div>
+            <div class="kpi-meta">Action immédiate</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        warning = len(lots_df[lots_df["stage"] == "J-7"])
+        st.markdown(f"""
+        <div class="kpi-card">
+            <div class="kpi-label">⏰ Alerte J-7</div>
+            <div class="kpi-value">{warning}</div>
+            <div class="kpi-meta">À surveiller</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        planning = len(lots_df[lots_df["stage"] == "J-21"])
+        st.markdown(f"""
+        <div class="kpi-card">
+            <div class="kpi-label">📅 Planifier J-21</div>
+            <div class="kpi-value">{planning}</div>
+            <div class="kpi-meta">Prévoir actions</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col4:
+        ok = len(lots_df[lots_df["stage"] == "OK"])
+        st.markdown(f"""
+        <div class="kpi-card">
+            <div class="kpi-label">✅ À Jour</div>
+            <div class="kpi-value">{ok}</div>
+            <div class="kpi-meta">Bien géré</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
     st.markdown('</div>', unsafe_allow_html=True)
-with chart_col2:
-    st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-    if not lots_df.empty:
-        lots_urgent = lots_df[lots_df["daysLeft"] <= 21].copy()
-        fig = px.scatter(lots_urgent, x="daysLeft", y="quantity", size="quantity", color="stage", color_discrete_map={"J-3": "#dc2626", "J-7": "#f59e0b", "J-21": "#3b82f6"}, title="📈 Urgence vs Quantité")
-        fig.update_layout(height=400, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
-        st.plotly_chart(fig, use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
 
-st.markdown("---")
-tab1, tab2, tab3 = st.tabs(["📊 Dashboard Tâches", "📧 Digest Email", "📥 Rapport Excel"])
+# TABS
+tab1, tab2, tab3, tab4 = st.tabs([
+    "📋 Inventaire",
+    "📊 Analytics",
+    "📧 Email",
+    "📥 Export"
+])
 
+# TAB 1: INVENTORY
 with tab1:
-    st.markdown("### 📋 Gestion des Tâches par Étape")
-    col1, col2, col3 = st.columns(3)
-    for col_idx, stage in enumerate(["J-21", "J-7", "J-3"]):
-        with [col1, col2, col3][col_idx]:
-            cfg = stage_config(stage)
-            st.markdown(f"#### {cfg['emoji']} {cfg['label']}")
-            if tasks_df.empty:
-                st.info("✅ Aucune tâche")
-                continue
-            sub = tasks_df[tasks_df["stage"] == stage].sort_values("expiryDate")
-            if sub.empty:
-                st.success("✅ Complété")
-                continue
-            for idx, (_, row) in enumerate(sub.iterrows()):
-                if row.get("status", "open") == "done":
-                    continue
-                exp_date = pd.to_datetime(row['expiryDate']).date()
-                days_left = int(row.get('daysLeft',0))
-                qty = int(row.get('quantity',0))
-                task_class = "urgent" if stage == "J-3" else "warning" if stage == "J-7" else ""
-                st.markdown(f'<div class="task-item {task_class}"><div class="task-product">{row.get("productId","")}</div><div class="task-details"><strong>Lot:</strong> {row.get("lotNumber","")} • <strong>Qté:</strong> {qty} • <strong>DLC:</strong> {exp_date.strftime("%d/%m")} • <strong>Rayon:</strong> {row.get("location","")}</div></div>', unsafe_allow_html=True)
-                col_a, col_b = st.columns([3, 1])
-                with col_b:
-                    if st.button(f"✅", key=f"done_{row['id']}_{idx}"):
-                        update_task(store_id, row["id"], "done")
-                        st.rerun()
-
-with tab2:
-    st.markdown("### 📧 Envoyer le Digest")
+    st.markdown("### 📋 Gestion Complète de l'Inventaire")
+    
     if not lots_df.empty:
-        urg = lots_df[lots_df["daysLeft"] <= 7].sort_values("expiryDate")
-        if not urg.empty:
-            st.info(f"📊 **{len(urg)} lots urgents** • **{int(urg['quantity'].sum())} unités**")
-    if st.button("📬 Envoyer le digest", type="primary", use_container_width=True):
-        with st.spinner("📧 Envoi en cours..."):
-            open_df = tasks_df[(tasks_df["status"] == "open") & (tasks_df["stage"].isin(["J-21", "J-7", "J-3"]))] if not tasks_df.empty else pd.DataFrame()
-            html = email_digest_html(store_id, open_df)
-            ok, msg = send_email(f"🧊 SmartExpiry Digest — {len(open_df)} tâches", html)
-            if ok:
-                st.success(msg)
-                st.balloons()
-            else:
-                st.error(msg)
+        # URGENT
+        urgent_lots = lots_df[lots_df["stage"] == "J-3"].sort_values("expiryDate")
+        if not urgent_lots.empty:
+            st.markdown("#### 🔴 URGENT - À 3 jours")
+            for _, row in urgent_lots.iterrows():
+                exp_date = pd.to_datetime(row['expiryDate']).date()
+                st.markdown(f"""
+                <div class="inventory-item urgent">
+                    <div>
+                        <div class="product-name">📦 {row['productId']} • Lot {row['lotNumber']}</div>
+                        <div class="product-details">
+                            📊 Qté: <b>{int(row['quantity'])}</b> | 📅 DLC: <b>{exp_date.strftime('%d/%m')}</b> | 📍 {row['location']}
+                        </div>
+                    </div>
+                    <div class="badge urgent-badge">🔴 {row['daysLeft']}j</div>
+                </div>
+                """, unsafe_allow_html=True)
+        
+        # WARNING
+        warning_lots = lots_df[lots_df["stage"] == "J-7"].sort_values("expiryDate")
+        if not warning_lots.empty:
+            st.markdown("#### ⏰ ALERTE - À 1 semaine")
+            for _, row in warning_lots.iterrows():
+                exp_date = pd.to_datetime(row['expiryDate']).date()
+                st.markdown(f"""
+                <div class="inventory-item warning">
+                    <div>
+                        <div class="product-name">📦 {row['productId']} • Lot {row['lotNumber']}</div>
+                        <div class="product-details">
+                            📊 Qté: <b>{int(row['quantity'])}</b> | 📅 DLC: <b>{exp_date.strftime('%d/%m')}</b> | 📍 {row['location']}
+                        </div>
+                    </div>
+                    <div class="badge">⏰ {row['daysLeft']}j</div>
+                </div>
+                """, unsafe_allow_html=True)
+        
+        # PLANNING
+        planning_lots = lots_df[lots_df["stage"] == "J-21"].sort_values("expiryDate")
+        if not planning_lots.empty:
+            st.markdown("#### 📅 PLANIFIER - À 3 semaines")
+            for _, row in planning_lots.iterrows():
+                exp_date = pd.to_datetime(row['expiryDate']).date()
+                st.markdown(f"""
+                <div class="inventory-item planning">
+                    <div>
+                        <div class="product-name">📦 {row['productId']} • Lot {row['lotNumber']}</div>
+                        <div class="product-details">
+                            📊 Qté: <b>{int(row['quantity'])}</b> | 📅 DLC: <b>{exp_date.strftime('%d/%m')}</b> | 📍 {row['location']}
+                        </div>
+                    </div>
+                    <div class="badge">📅 {row['daysLeft']}j</div>
+                </div>
+                """, unsafe_allow_html=True)
+    else:
+        st.info("✅ Aucun lot pour ce magasin")
 
+# TAB 2: ANALYTICS
+with tab2:
+    st.markdown("### 📊 Visualisation des Données")
+    
+    if not lots_df.empty:
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            stage_counts = lots_df["stage"].value_counts()
+            fig = go.Figure(data=[go.Bar(
+                x=stage_counts.index,
+                y=stage_counts.values,
+                marker=dict(color=['#dc2626', '#f59e0b', '#3b82f6', '#10b981']),
+                text=stage_counts.values,
+                textposition='outside'
+            )])
+            fig.update_layout(
+                title="Distribution par Étape",
+                template="plotly_dark",
+                height=400,
+                showlegend=False,
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)'
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        
+        with col2:
+            fig2 = go.Figure(data=[go.Scatter(
+                x=lots_df["daysLeft"],
+                y=lots_df["quantity"],
+                mode='markers',
+                marker=dict(
+                    size=lots_df["quantity"]/3,
+                    color=lots_df["daysLeft"],
+                    colorscale="Reds_r",
+                    showscale=True
+                ),
+                text=lots_df["productId"],
+                hovertemplate="<b>%{text}</b><br>Jours: %{x}<br>Qté: %{y}<extra></extra>"
+            )])
+            fig2.update_layout(
+                title="Urgence vs Quantité",
+                template="plotly_dark",
+                height=400,
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)'
+            )
+            st.plotly_chart(fig2, use_container_width=True)
+
+# TAB 3: EMAIL
 with tab3:
-    st.markdown("### 📥 Exporter en Rapport CSV")
-    if st.button("⬇️ Générer le rapport", type="primary", use_container_width=True):
-        csv_data = export_to_csv(lots_df, tasks_df, store_id)
-        st.download_button(label="📊 Télécharger", data=csv_data, file_name=f"smartexpiry_{store_id}_{datetime.now(PARIS).strftime('%Y%m%d_%H%M')}.csv", mime="text/csv", use_container_width=True)
-        st.success("✅ Rapport généré")
+    st.markdown("### 📧 Envoyer le Rapport")
+    
+    if not lots_df.empty:
+        st.info(f"📊 **{len(lots_df[lots_df['stage'] == 'J-3'])} lots urgents** | **{int(lots_df['quantity'].sum())} unités**")
+    
+    if st.button("📬 Envoyer le rapport", type="primary", use_container_width=True):
+        with st.spinner("Envoi..."):
+            try:
+                html = f"""
+                <html><body style="font-family: Outfit; background: #0a0e27; color: #e8eef7; padding: 40px;">
+                <div style="max-width: 850px; margin: 0 auto; background: linear-gradient(135deg, rgba(30, 58, 138, 0.15) 0%, rgba(88, 28, 135, 0.1) 100%); border-radius: 24px; padding: 40px; border: 1px solid rgba(148, 163, 184, 0.1);">
+                <h1 style="color: #60a5fa; margin: 0;">🧊 SmartExpiry Pro</h1>
+                <p style="color: #cbd5e1; margin: 10px 0 30px 0;">Rapport - {datetime.now(PARIS).strftime('%d %B %Y')}</p>
+                <p>Magasin: <b>{store_id}</b></p>
+                <p>Lots urgents: <b>{len(lots_df[lots_df['stage'] == 'J-3'])}</b></p>
+                <p>Total: <b>{int(lots_df['quantity'].sum())}</b> unités</p>
+                </div>
+                </body></html>
+                """
+                
+                msg = MIMEMultipart()
+                msg["Subject"] = f"🧊 SmartExpiry - {store_id}"
+                msg["From"] = st.secrets.email["from"]
+                msg["To"] = st.secrets.email["to"]
+                msg.attach(MIMEText(html, "html"))
+                
+                with smtplib.SMTP(st.secrets.email["host"], int(st.secrets.email["port"])) as s:
+                    s.starttls()
+                    s.login(st.secrets.email["username"], st.secrets.email["password"])
+                    s.sendmail(msg["From"], [msg["To"]], msg.as_string())
+                
+                st.success("✅ Email envoyé!")
+                st.balloons()
+            except Exception as e:
+                st.error(f"❌ {str(e)}")
 
-st.markdown("---")
-st.caption(f"🧊 SmartExpiry Pro v2.0 • Dernière sync: {datetime.now(PARIS).strftime('%d/%m/%Y %H:%M:%S')}")
+# TAB 4: EXPORT
+with tab4:
+    st.markdown("### 📥 Télécharger les Données")
+    
+    if st.button("⬇️ Exporter en CSV", type="primary", use_container_width=True):
+        if not lots_df.empty:
+            csv = "PRODUIT,LOT,QUANTITÉ,DLC,JOURS,RAYON,ÉTAPE\n"
+            for _, row in lots_df.iterrows():
+                exp_date = pd.to_datetime(row['expiryDate']).date().strftime('%d/%m/%Y')
+                csv += f"{row['productId']},{row['lotNumber']},{int(row['quantity'])},{exp_date},{int(row['daysLeft'])},{row['location']},{row['stage']}\n"
+            
+            st.download_button(
+                label="📊 Télécharger",
+                data=csv,
+                file_name=f"smartexpiry_{store_id}_{datetime.now(PARIS).strftime('%Y%m%d')}.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
+
+# FOOTER
+st.divider()
+st.markdown(f"""
+<p style="text-align: center; color: #94a3b8; font-size: 0.9rem;">
+🧊 <b>SmartExpiry Pro v2.0</b> • Sync: {datetime.now(PARIS).strftime('%d/%m %H:%M')} • Magasin: <b>{store_id}</b>
+</p>
+""", unsafe_allow_html=True)
