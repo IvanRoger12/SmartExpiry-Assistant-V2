@@ -106,17 +106,31 @@ def ts_to_dt(v):
 def load_lots(store_id: str) -> pd.DataFrame:
     lots = []
     try:
-        for doc in db.collection("stores").document(store_id).collection("lots").stream():
+        # Charger directement depuis /lots/ collection
+        for doc in db.collection("lots").stream():
             d = doc.to_dict()
             d["id"] = doc.id
-            d["expiryDate"] = ts_to_dt(d.get("expiryDate"))
+            
+            # Gérer différents noms de champs possibles
+            d["expiryDate"] = ts_to_dt(d.get("expiryDate") or d.get("dlc") or d.get("end_date"))
+            d["productId"] = d.get("productId") or d.get("product_ean") or d.get("product_name") or ""
+            d["lotNumber"] = d.get("lotNumber") or d.get("lot_code") or d.get("lot_number") or ""
+            d["quantity"] = d.get("quantity") or d.get("qty_current") or d.get("qty") or 0
+            d["location"] = d.get("location") or d.get("position") or ""
+            
             lots.append(d)
-    except:
-        pass
-    if not lots:
+            
+    except Exception as e:
+        st.error(f"❌ Erreur chargement lots: {str(e)}")
         return pd.DataFrame(columns=["id", "productId", "lotNumber", "quantity", "expiryDate", "location"])
+    
+    if not lots:
+        st.info("ℹ️ Aucun lot trouvé dans la base de données")
+        return pd.DataFrame(columns=["id", "productId", "lotNumber", "quantity", "expiryDate", "location"])
+    
     df = pd.DataFrame(lots)
-    df["expiryDate"] = pd.to_datetime(df["expiryDate"])
+    df["expiryDate"] = pd.to_datetime(df["expiryDate"], errors='coerce')
+    df = df.dropna(subset=["expiryDate"])  # Enlever les lignes sans date valide
     df["daysLeft"] = df["expiryDate"].apply(days_until)
     df["stage"] = df["daysLeft"].apply(stage_from_days)
     df = df.sort_values("expiryDate")
@@ -146,13 +160,20 @@ def ensure_tasks(store_id: str, lots_df: pd.DataFrame) -> int:
 
 @st.cache_data(ttl=60)
 def load_tasks(store_id: str) -> pd.DataFrame:
-    docs = list(get_tasks_col(store_id).stream())
+    try:
+        docs = list(get_tasks_col(store_id).stream())
+    except:
+        docs = []
+    
     if not docs:
-        return pd.DataFrame(columns=["id", "stage", "status"])
+        return pd.DataFrame(columns=["id", "stage", "status", "expiryDate"])
+    
     records = [doc.to_dict() | {"id": doc.id} for doc in docs]
     df = pd.DataFrame(records)
+    
     if "expiryDate" in df.columns:
         df["expiryDate"] = pd.to_datetime(df["expiryDate"].apply(lambda x: x if isinstance(x, datetime) else ts_to_dt(x)))
+    
     return df
 
 def update_task(store_id: str, task_id: str, status: str):
