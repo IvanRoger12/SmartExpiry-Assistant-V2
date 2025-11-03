@@ -183,7 +183,32 @@ def update_task(store_id: str, task_id: str, status: str):
     get_tasks_col(store_id).document(task_id).set({"status": status, "updatedAt": firestore.SERVER_TIMESTAMP}, merge=True)
     st.cache_data.clear()
 
+def export_to_csv(lots_df: pd.DataFrame, tasks_df: pd.DataFrame, store_id: str) -> str:
+    """Export en CSV simple"""
+    export_data = "=== SMARTEXPIRY PRO RAPPORT ===\n"
+    export_data += f"Magasin: {store_id}\n"
+    export_data += f"Date: {datetime.now(PARIS).strftime('%d/%m/%Y %H:%M')}\n\n"
+    
+    export_data += "=== LOTS URGENTS ===\n"
+    urgent_lots = lots_df[lots_df["stage"] != "OK"]
+    if not urgent_lots.empty:
+        export_data += "PRODUIT,LOT,QTÉ,DLC,JOURS,RAYON,ÉTAPE\n"
+        for _, row in urgent_lots.iterrows():
+            exp_date = pd.to_datetime(row['expiryDate']).date().strftime('%d/%m/%Y')
+            export_data += f"{row.get('productId', '')},{row.get('lotNumber', '')},{int(row.get('quantity', 0))},{exp_date},{int(row['daysLeft'])},{row.get('location', '')},{row['stage']}\n"
+    
+    export_data += "\n=== TÂCHES OUVERTES ===\n"
+    open_tasks = tasks_df[tasks_df["status"] == "open"]
+    if not open_tasks.empty:
+        export_data += "PRODUIT,LOT,QTÉ,DLC,JOURS,RAYON,ÉTAPE\n"
+        for _, row in open_tasks.iterrows():
+            exp_date = pd.to_datetime(row['expiryDate']).date().strftime('%d/%m/%Y')
+            export_data += f"{row.get('productId', '')},{row.get('lotNumber', '')},{int(row.get('quantity', 0))},{exp_date},{int(row.get('daysLeft', 0))},{row.get('location', '')},{row['stage']}\n"
+    
+    return export_data
+
 def send_email(subject: str, html: str) -> tuple:
+    """Envoie un email via SendGrid"""
     try:
         cfg = st.secrets.get("email", {})
         if not all(cfg.get(k) for k in ["host", "port", "from", "to"]):
@@ -203,6 +228,7 @@ def send_email(subject: str, html: str) -> tuple:
         return False, f"❌ Erreur email: {str(e)}"
 
 def email_digest_html(store_id: str, tasks_df: pd.DataFrame) -> str:
+    """Génère le HTML du digest email"""
     rows = []
     total_urgent = 0
     for stage in ["J-21", "J-7", "J-3"]:
@@ -221,9 +247,9 @@ def email_digest_html(store_id: str, tasks_df: pd.DataFrame) -> str:
             rows.append(f"""<tr style='border-bottom:1px solid #e5e7eb;'><td style='padding:12px;border:1px solid #d1d5db;'>{r.get('productId','N/A')}</td><td style='padding:12px;border:1px solid #d1d5db;font-weight:700;color:#3b82f6;'>{r.get('lotNumber','')}</td><td style='padding:12px;border:1px solid #d1d5db;text-align:center;font-weight:700;'>{qty}</td><td style='padding:12px;border:1px solid #d1d5db;text-align:center;'>{exp_date}</td><td style='padding:12px;border:1px solid #d1d5db;text-align:center;color:{"#dc2626" if days_left <= 3 else "#f59e0b"};font-weight:900;font-size:15px;'>{days_left}j</td><td style='padding:12px;border:1px solid #d1d5db;'>{r.get('location','')}</td></tr>""")
         rows.append("</table>")
     body = "".join(rows) if rows else "<p style='text-align:center;color:#6b7280;padding:2rem;'>✅ Toutes les tâches sont à jour</p>"
-    return f"""<!doctype html><html><head><meta charset="utf-8"></head><body style="font-family:'Inter', Arial, sans-serif;background:#f8fafc;margin:0;padding:20px;color:#0f172a;"><div style="max-width:850px;margin:0 auto;background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.15);"><div style="background:linear-gradient(135deg,#3b82f6 0%,#2563eb 100%);padding:40px;color:#fff;text-align:center;"><h1 style="margin:0;font-size:32px;font-weight:900;">🧊 SmartExpiry</h1><h2 style="margin:12px 0 0;font-size:20px;font-weight:700;">Digest Quotidien</h2><div style="opacity:.9;margin-top:14px;font-size:14px;">Magasin: <strong>{store_id}</strong> • {datetime.now(PARIS).strftime('%d %B %Y')}</div><div style="margin-top:20px;padding:16px;background:rgba(255,255,255,0.15);border-radius:12px;display:inline-block;"><span style="font-size:36px;font-weight:900;">{total_urgent}</span><br/><span style="font-size:13px;text-transform:uppercase;">Tâches J-3 urgentes</span></div></div><div style="padding:40px;">{body}<div style="text-align:center;margin-top:32px;"><a href="#" style="display:inline-block;background:#3b82f6;color:#fff;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;">👉 Ouvrir l'application</a></div></div><div style="background:#f1f5f9;padding:24px;text-align:center;color:#64748b;font-size:12px;border-top:1px solid #e2e8f0;"><strong>SmartExpiry Pro</strong> • Gestion FEFO<br/>Zéro perte • Marges optimisées<br/>{datetime.now(PARIS).strftime('%d/%m/%Y')}</div></div></body></html>"""
+    return f"""<!doctype html><html><head><meta charset="utf-8"></head><body style="font-family:'Inter', Arial, sans-serif;background:#f8fafc;margin:0;padding:20px;color:#0f172a;"><div style="max-width:850px;margin:0 auto;background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.15);"><div style="background:linear-gradient(135deg,#3b82f6 0%,#2563eb 100%);padding:40px;color:#fff;text-align:center;"><h1 style="margin:0;font-size:32px;font-weight:900;">🧊 SmartExpiry</h1><h2 style="margin:12px 0 0;font-size:20px;font-weight:700;">Digest Quotidien</h2><div style="opacity:.9;margin-top:14px;font-size:14px;">Magasin: <strong>{store_id}</strong> • {datetime.now(PARIS).strftime('%d %B %Y')}</div><div style="margin-top:20px;padding:16px;background:rgba(255,255,255,0.15);border-radius:12px;display:inline-block;"><span style="font-size:36px;font-weight:900;">{total_urgent}</span><br/><span style="font-size:13px;text-transform:uppercase;">Tâches J-3 urgentes</span></div></div><div style="padding:40px;">{body}<div style="text-align:center;margin-top:32px;"><a href="https://share.streamlit.io/ivanroger12/smartexpiry-assistant-v2" style="display:inline-block;background:#3b82f6;color:#fff;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;">👉 Ouvrir l'application</a></div></div><div style="background:#f1f5f9;padding:24px;text-align:center;color:#64748b;font-size:12px;border-top:1px solid #e2e8f0;"><strong>SmartExpiry Pro</strong> • Gestion FEFO<br/>Zéro perte • Marges optimisées<br/>{datetime.now(PARIS).strftime('%d/%m/%Y')}</div></div></body></html>"""
 
-def export_to_csv(lots_df: pd.DataFrame, tasks_df: pd.DataFrame, store_id: str) -> str:
+
     """Export en CSV simple"""
     export_data = "=== SMARTEXPIRY PRO RAPPORT ===\n"
     export_data += f"Magasin: {store_id}\n"
@@ -355,7 +381,7 @@ with tab2:
         if not urg.empty:
             st.info(f"📊 **{len(urg)} lots urgents** • **{int(urg['quantity'].sum())} unités**")
     if st.button("📬 Envoyer le digest", type="primary", use_container_width=True):
-        with st.spinner("📧 Envoi..."):
+        with st.spinner("📧 Envoi en cours..."):
             open_df = tasks_df[(tasks_df["status"] == "open") & (tasks_df["stage"].isin(["J-21", "J-7", "J-3"]))] if not tasks_df.empty else pd.DataFrame()
             html = email_digest_html(store_id, open_df)
             ok, msg = send_email(f"🧊 SmartExpiry Digest — {len(open_df)} tâches", html)
