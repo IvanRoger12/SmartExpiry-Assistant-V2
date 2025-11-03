@@ -1,3 +1,4 @@
-git add app.py
-   git commit -m "Test ultra simple"
-   git push
+import streamlit as st
+
+st.title("SmartExpiry")
+st.write("Hello World")
