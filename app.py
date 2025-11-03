@@ -9,8 +9,6 @@ from email.mime.text import MIMEText
 import firebase_admin
 from firebase_admin import credentials, firestore
 import io
-from openpyxl import Workbook
-from openpyxl.styles import Font, PatternFill, Alignment
 
 st.set_page_config(page_title="🧊 SmartExpiry Pro", layout="wide", page_icon="🧊", initial_sidebar_state="expanded")
 
@@ -201,39 +199,29 @@ def email_digest_html(store_id: str, tasks_df: pd.DataFrame) -> str:
     body = "".join(rows) if rows else "<p style='text-align:center;color:#6b7280;padding:2rem;'>✅ Toutes les tâches sont à jour</p>"
     return f"""<!doctype html><html><head><meta charset="utf-8"></head><body style="font-family:'Inter', Arial, sans-serif;background:#f8fafc;margin:0;padding:20px;color:#0f172a;"><div style="max-width:850px;margin:0 auto;background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.15);"><div style="background:linear-gradient(135deg,#3b82f6 0%,#2563eb 100%);padding:40px;color:#fff;text-align:center;"><h1 style="margin:0;font-size:32px;font-weight:900;">🧊 SmartExpiry</h1><h2 style="margin:12px 0 0;font-size:20px;font-weight:700;">Digest Quotidien</h2><div style="opacity:.9;margin-top:14px;font-size:14px;">Magasin: <strong>{store_id}</strong> • {datetime.now(PARIS).strftime('%d %B %Y')}</div><div style="margin-top:20px;padding:16px;background:rgba(255,255,255,0.15);border-radius:12px;display:inline-block;"><span style="font-size:36px;font-weight:900;">{total_urgent}</span><br/><span style="font-size:13px;text-transform:uppercase;">Tâches J-3 urgentes</span></div></div><div style="padding:40px;">{body}<div style="text-align:center;margin-top:32px;"><a href="#" style="display:inline-block;background:#3b82f6;color:#fff;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;">👉 Ouvrir l'application</a></div></div><div style="background:#f1f5f9;padding:24px;text-align:center;color:#64748b;font-size:12px;border-top:1px solid #e2e8f0;"><strong>SmartExpiry Pro</strong> • Gestion FEFO<br/>Zéro perte • Marges optimisées<br/>{datetime.now(PARIS).strftime('%d/%m/%Y')}</div></div></body></html>"""
 
-def export_to_excel(lots_df: pd.DataFrame, tasks_df: pd.DataFrame, store_id: str) -> bytes:
-    output = io.BytesIO()
-    wb = Workbook()
-    ws1 = wb.active
-    ws1.title = "Lots Urgents"
-    headers = ["🏷️ PRODUIT", "📦 LOT", "📊 QTÉ", "📅 DLC", "⏱️ JOURS", "📍 RAYON", "🎯 ÉTAPE"]
-    ws1.append(headers)
-    header_fill = PatternFill(start_color="1e3a8a", end_color="1e3a8a", fill_type="solid")
-    header_font = Font(bold=True, color="FFFFFF", size=12)
-    for cell in ws1[1]:
-        cell.fill = header_fill
-        cell.font = header_font
-        cell.alignment = Alignment(horizontal="center", vertical="center")
-    for _, row in lots_df[lots_df["stage"] != "OK"].iterrows():
-        exp_date = pd.to_datetime(row['expiryDate']).date()
-        ws1.append([row.get('productId', ''), row.get('lotNumber', ''), int(row.get('quantity', 0)), exp_date, int(row['daysLeft']), row.get('location', ''), row['stage']])
-    for col in ['A', 'B', 'C', 'D', 'E', 'F', 'G']:
-        ws1.column_dimensions[col].width = 16
-    ws2 = wb.create_sheet("Tâches Ouvertes")
-    ws2.append(headers)
-    for cell in ws2[1]:
-        cell.fill = header_fill
-        cell.font = header_font
-        cell.alignment = Alignment(horizontal="center", vertical="center")
-    if not tasks_df.empty:
-        for _, row in tasks_df[tasks_df["status"] == "open"].iterrows():
-            exp_date = pd.to_datetime(row['expiryDate']).date()
-            ws2.append([row.get('productId', ''), row.get('lotNumber', ''), int(row.get('quantity', 0)), exp_date, int(row.get('daysLeft', 0)), row.get('location', ''), row['stage']])
-    for col in ['A', 'B', 'C', 'D', 'E', 'F', 'G']:
-        ws2.column_dimensions[col].width = 16
-    wb.save(output)
-    output.seek(0)
-    return output.getvalue()
+def export_to_csv(lots_df: pd.DataFrame, tasks_df: pd.DataFrame, store_id: str) -> str:
+    """Export en CSV simple"""
+    export_data = "=== SMARTEXPIRY PRO RAPPORT ===\n"
+    export_data += f"Magasin: {store_id}\n"
+    export_data += f"Date: {datetime.now(PARIS).strftime('%d/%m/%Y %H:%M')}\n\n"
+    
+    export_data += "=== LOTS URGENTS ===\n"
+    urgent_lots = lots_df[lots_df["stage"] != "OK"]
+    if not urgent_lots.empty:
+        export_data += "PRODUIT,LOT,QTÉ,DLC,JOURS,RAYON,ÉTAPE\n"
+        for _, row in urgent_lots.iterrows():
+            exp_date = pd.to_datetime(row['expiryDate']).date().strftime('%d/%m/%Y')
+            export_data += f"{row.get('productId', '')},{row.get('lotNumber', '')},{int(row.get('quantity', 0))},{exp_date},{int(row['daysLeft'])},{row.get('location', '')},{row['stage']}\n"
+    
+    export_data += "\n=== TÂCHES OUVERTES ===\n"
+    open_tasks = tasks_df[tasks_df["status"] == "open"]
+    if not open_tasks.empty:
+        export_data += "PRODUIT,LOT,QTÉ,DLC,JOURS,RAYON,ÉTAPE\n"
+        for _, row in open_tasks.iterrows():
+            exp_date = pd.to_datetime(row['expiryDate']).date().strftime('%d/%m/%Y')
+            export_data += f"{row.get('productId', '')},{row.get('lotNumber', '')},{int(row.get('quantity', 0))},{exp_date},{int(row.get('daysLeft', 0))},{row.get('location', '')},{row['stage']}\n"
+    
+    return export_data
 
 with st.sidebar:
     st.markdown("# 🧊 **SmartExpiry Pro**")
@@ -354,10 +342,10 @@ with tab2:
                 st.error(msg)
 
 with tab3:
-    st.markdown("### 📥 Exporter en Rapport Excel")
+    st.markdown("### 📥 Exporter en Rapport CSV")
     if st.button("⬇️ Générer le rapport", type="primary", use_container_width=True):
-        excel_data = export_to_excel(lots_df, tasks_df, store_id)
-        st.download_button(label="📊 Télécharger", data=excel_data, file_name=f"smartexpiry_{store_id}_{datetime.now(PARIS).strftime('%Y%m%d_%H%M')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
+        csv_data = export_to_csv(lots_df, tasks_df, store_id)
+        st.download_button(label="📊 Télécharger", data=csv_data, file_name=f"smartexpiry_{store_id}_{datetime.now(PARIS).strftime('%Y%m%d_%H%M')}.csv", mime="text/csv", use_container_width=True)
         st.success("✅ Rapport généré")
 
 st.markdown("---")
