@@ -37,8 +37,13 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Initialize OpenAI client
-openai_client = OpenAI(api_key=st.secrets.openai.api_key)
+# Initialize OpenAI client (lazy - only when needed)
+def get_openai_client():
+    try:
+        return OpenAI(api_key=st.secrets.openai.api_key)
+    except Exception as e:
+        st.error(f"❌ Erreur OpenAI: {str(e)}")
+        return None
 
 # Initialize chat history for ChatGPT
 if "chat_history" not in st.session_state:
@@ -340,6 +345,11 @@ def filter_lots(df, search, urgency, location):
 def chat_with_gpt(user_message, lots_data_context):
     """Chat avec ChatGPT sur les données d'inventaire"""
     
+    client = get_openai_client()
+    if not client:
+        st.error("❌ OpenAI non configuré")
+        return None
+    
     st.session_state.chat_history.append({
         "role": "user",
         "content": user_message
@@ -358,20 +368,24 @@ CONTEXTE ACTUEL DE L'INVENTAIRE:
 Réponds en français, de manière concise et actionnable.
 Donne des recommandations pratiques immédiates."""
     
-    response = openai_client.chat.completions.create(
-        model="gpt-4o-mini",
-        max_tokens=500,
-        system=system_prompt,
-        messages=st.session_state.chat_history
-    )
-    
-    assistant_message = response.choices[0].message.content
-    st.session_state.chat_history.append({
-        "role": "assistant",
-        "content": assistant_message
-    })
-    
-    return assistant_message
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            max_tokens=500,
+            system=system_prompt,
+            messages=st.session_state.chat_history
+        )
+        
+        assistant_message = response.choices[0].message.content
+        st.session_state.chat_history.append({
+            "role": "assistant",
+            "content": assistant_message
+        })
+        
+        return assistant_message
+    except Exception as e:
+        st.error(f"❌ Erreur ChatGPT: {str(e)}")
+        return None
 
 # ═════════════════════════════════════════════════════════════════════════
 # SIDEBAR - NAVIGATION & CHATGPT
