@@ -1,7 +1,7 @@
 """
 ╔════════════════════════════════════════════════════════════════════════╗
-║         🧊 SMARTEXPIRY PRO - VERSION FINALE PRODUCTION               ║
-║              Gestion FEFO • IA Chatbot Claude • Design Retail Pro    ║
+║         🧊 SMARTEXPIRY PRO - VERSION CHATGPT PRODUCTION               ║
+║              Gestion FEFO • ChatGPT • Design Retail Pro              ║
 ║                    READY FOR DEMO - NOV 5, 2025                      ║
 ╚════════════════════════════════════════════════════════════════════════╝
 
@@ -10,9 +10,9 @@ FEATURES:
 ✅ Alertes colorisées (J-3 rouge, J-7 orange, J-30 jaune)
 ✅ Email automatique
 ✅ Export CSV
-✅ 🤖 Chatbot IA Claude intégré
-✅ Design Retail Pro (Carrefour/Monoprix)
-✅ Responsive et présentable
+✅ 🤖 Chatbot ChatGPT intégré
+✅ Design Retail Pro
+✅ Responsive
 """
 
 import streamlit as st
@@ -26,7 +26,7 @@ from firebase_admin import credentials, firestore
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from anthropic import Anthropic
+from openai import OpenAI
 
 PARIS = tz.gettz("Europe/Paris")
 
@@ -37,10 +37,10 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Initialize Claude client
-claude_client = Anthropic()
+# Initialize OpenAI client
+openai_client = OpenAI(api_key=st.secrets.openai.api_key)
 
-# Initialize chat history for Claude
+# Initialize chat history for ChatGPT
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
@@ -74,10 +74,6 @@ html, body {
   max-width: 1400px !important;
 }
 
-/* ════════════════════════════════ */
-/* MAIN TITLE - CENTRE, GRAS, ÉNORME */
-/* ════════════════════════════════ */
-
 .main-title {
   text-align: center;
   font-size: 56px;
@@ -97,7 +93,6 @@ html, body {
   letter-spacing: 0.5px;
 }
 
-/* HERO BANNER */
 .hero {
   background: linear-gradient(135deg, rgba(227, 6, 19, 0.05) 0%, rgba(243, 157, 0, 0.03) 100%);
   border: 1px solid var(--border);
@@ -120,7 +115,6 @@ html, body {
   margin: 0;
 }
 
-/* KPI GRID */
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -149,7 +143,6 @@ html, body {
 .kpi-value { font-size: 36px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
 .kpi-meta { font-size: 13px; color: var(--text-light); }
 
-/* PRODUCT CARD */
 .product-row {
   background: var(--white);
   border: 1px solid var(--border);
@@ -179,34 +172,6 @@ html, body {
 .detail-item { display: flex; align-items: center; gap: 4px; font-weight: 600; }
 .status-badge { background: var(--urgency); color: white; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
 
-/* FILTERS */
-.filter-container {
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 30px;
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.filter-input {
-  padding: 10px 16px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: 14px;
-  font-family: 'Inter', sans-serif;
-}
-
-.filter-input:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(227, 6, 19, 0.1);
-}
-
-/* BUTTONS */
 .stButton button {
   background: linear-gradient(135deg, var(--primary) 0%, #C20410 100%) !important;
   color: white !important;
@@ -226,7 +191,6 @@ html, body {
   box-shadow: 0 6px 20px rgba(227, 6, 19, 0.3) !important;
 }
 
-/* TABS */
 .stTabs [data-baseweb="tab-list"] {
   border-bottom: 2px solid var(--border) !important;
   gap: 24px !important;
@@ -244,7 +208,6 @@ html, body {
   font-weight: 600 !important;
 }
 
-/* SECTION TITLES */
 .section-title {
   font-size: 20px;
   font-weight: 700;
@@ -254,13 +217,10 @@ html, body {
   border-bottom: 2px solid var(--primary);
 }
 
-/* RESPONSIVE */
 @media (max-width: 768px) {
   .main-title { font-size: 36px; }
   .product-row { flex-direction: column; align-items: flex-start; }
   .status-badge { margin-top: 12px; }
-  .product-details { margin-bottom: 12px; }
-  .filter-container { flex-direction: column; }
 }
 
 </style>
@@ -377,8 +337,8 @@ def filter_lots(df, search, urgency, location):
     
     return result
 
-def chat_with_claude(user_message, lots_data_context):
-    """Chat avec Claude sur les données d'inventaire"""
+def chat_with_gpt(user_message, lots_data_context):
+    """Chat avec ChatGPT sur les données d'inventaire"""
     
     st.session_state.chat_history.append({
         "role": "user",
@@ -398,14 +358,14 @@ CONTEXTE ACTUEL DE L'INVENTAIRE:
 Réponds en français, de manière concise et actionnable.
 Donne des recommandations pratiques immédiates."""
     
-    response = claude_client.messages.create(
-        model="claude-3-5-sonnet-20241022",
+    response = openai_client.chat.completions.create(
+        model="gpt-4o-mini",
         max_tokens=500,
         system=system_prompt,
         messages=st.session_state.chat_history
     )
     
-    assistant_message = response.content[0].text
+    assistant_message = response.choices[0].message.content
     st.session_state.chat_history.append({
         "role": "assistant",
         "content": assistant_message
@@ -414,7 +374,7 @@ Donne des recommandations pratiques immédiates."""
     return assistant_message
 
 # ═════════════════════════════════════════════════════════════════════════
-# SIDEBAR - NAVIGATION & CLAUDE CHATBOT
+# SIDEBAR - NAVIGATION & CHATGPT
 # ═════════════════════════════════════════════════════════════════════════
 
 with st.sidebar:
@@ -432,12 +392,12 @@ with st.sidebar:
     ✅ Sync Real-Time  
     📊 Multi-Magasins  
     ⚡ 100% Automatisé  
-    🤖 IA Intégrée
+    🤖 IA Intégrée (ChatGPT)
     """)
     
     st.divider()
     
-    st.markdown("### 🤖 Assistant IA")
+    st.markdown("### 🤖 Assistant IA (ChatGPT)")
     
     user_question = st.text_input(
         "Pose une question sur ton inventaire...",
@@ -448,9 +408,12 @@ with st.sidebar:
     if user_question and db:
         lots_df_temp = load_lots(store_id)
         if not lots_df_temp.empty:
-            with st.spinner("L'IA réfléchit..."):
-                ai_response = chat_with_claude(user_question, lots_df_temp)
-                st.info(ai_response)
+            with st.spinner("ChatGPT réfléchit..."):
+                try:
+                    ai_response = chat_with_gpt(user_question, lots_df_temp)
+                    st.info(ai_response)
+                except Exception as e:
+                    st.error(f"❌ Erreur ChatGPT: {str(e)}")
         else:
             st.warning("Pas de données disponibles")
 
@@ -460,17 +423,15 @@ with st.sidebar:
 
 lots_df = load_lots(store_id)
 
-# MAIN TITLE - CENTRE, GRAS, ÉNORME
 st.markdown("""
 <h1 class="main-title">🧊 SmartExpiry Pro</h1>
 <p class="main-subtitle">Gestion FEFO Intelligente • Alertes Automatiques • Zéro Perte</p>
 """, unsafe_allow_html=True)
 
-# HERO BANNER
 st.markdown("""
 <div class="hero">
     <h2>📦 Suivi d'Inventaire en Temps Réel</h2>
-    <p>Alertes colorisées • Email automatique • Export données • Recommandations IA</p>
+    <p>Alertes colorisées • Email automatique • Export données • Recommandations IA (ChatGPT)</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -570,7 +531,7 @@ else:
     filtered_df = pd.DataFrame()
 
 # ═════════════════════════════════════════════════════════════════════════
-# TABS - MAIN INTERFACE
+# TABS
 # ═════════════════════════════════════════════════════════════════════════
 
 tab1, tab2, tab3, tab4 = st.tabs([
@@ -679,13 +640,13 @@ with tab3:
                 
                 msg = MIMEMultipart()
                 msg["Subject"] = f"🧊 SmartExpiry Pro - {store_id}"
-                msg["From"] = st.secrets.email["from"]
-                msg["To"] = st.secrets.email["to"]
+                msg["From"] = st.secrets.email.get("from", "nfindaroger@gmail.com")
+                msg["To"] = st.secrets.email.get("to", "timotonou@yahoo.com")
                 msg.attach(MIMEText(html, "html"))
                 
-                with smtplib.SMTP(st.secrets.email["host"], int(st.secrets.email["port"])) as server:
+                with smtplib.SMTP(st.secrets.email.host, int(st.secrets.email.port)) as server:
                     server.starttls()
-                    server.login(st.secrets.email["username"], st.secrets.email["password"])
+                    server.login(st.secrets.email.username, st.secrets.email.password)
                     server.sendmail(msg["From"], [msg["To"]], msg.as_string())
                 
                 st.success("✅ Email envoyé!")
