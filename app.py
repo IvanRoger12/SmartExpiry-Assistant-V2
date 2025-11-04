@@ -37,12 +37,14 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Initialize OpenAI client (lazy - only when needed)
+# OpenAI client will be created on demand (lazy loading)
 def get_openai_client():
     try:
+        if not st.secrets.openai.api_key:
+            return None
         return OpenAI(api_key=st.secrets.openai.api_key)
     except Exception as e:
-        st.error(f"❌ Erreur OpenAI: {str(e)}")
+        st.error(f"❌ Erreur OpenAI Config: {str(e)}")
         return None
 
 # Initialize chat history for ChatGPT
@@ -355,7 +357,7 @@ def chat_with_gpt(user_message, lots_data_context):
     
     client = get_openai_client()
     if not client:
-        st.error("❌ OpenAI non configuré")
+        st.error("❌ ChatGPT non configuré. Ajoute ta clé OpenAI dans Secrets.")
         return None
     
     st.session_state.chat_history.append({
@@ -381,7 +383,8 @@ Donne des recommandations pratiques immédiates."""
             model="gpt-4o-mini",
             max_tokens=500,
             system=system_prompt,
-            messages=st.session_state.chat_history
+            messages=st.session_state.chat_history,
+            timeout=30
         )
         
         assistant_message = response.choices[0].message.content
