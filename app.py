@@ -38,14 +38,39 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# OpenAI client will be created on demand (lazy loading)
-def get_openai_client():
+# OpenAI API call via requests (no client library needed)
+def call_openai_api(messages, system_prompt):
+    """Appel direct à l'API OpenAI via requests"""
     try:
-        if not st.secrets.openai.api_key:
+        api_key = st.secrets.openai.api_key
+        if not api_key:
             return None
-        return OpenAI(api_key=st.secrets.openai.api_key)
+        
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        data = {
+            "model": "gpt-4o-mini",
+            "max_tokens": 500,
+            "messages": [{"role": "system", "content": system_prompt}] + messages
+        }
+        
+        response = requests.post(
+            "https://api.openai.com/v1/chat/completions",
+            headers=headers,
+            json=data,
+            timeout=30
+        )
+        
+        if response.status_code == 200:
+            return response.json()['choices'][0]['message']['content']
+        else:
+            st.error(f"❌ Erreur OpenAI: {response.status_code}")
+            return None
     except Exception as e:
-        st.error(f"❌ Erreur OpenAI Config: {str(e)}")
+        st.error(f"❌ Erreur OpenAI: {str(e)}")
         return None
 
 # Initialize chat history for ChatGPT
@@ -356,11 +381,6 @@ def filter_lots(df, search, urgency, location):
 def chat_with_gpt(user_message, lots_data_context):
     """Chat avec ChatGPT sur les données d'inventaire"""
     
-    client = get_openai_client()
-    if not client:
-        st.error("❌ ChatGPT non configuré. Ajoute ta clé OpenAI dans Secrets.")
-        return None
-    
     st.session_state.chat_history.append({
         "role": "user",
         "content": user_message
@@ -379,24 +399,16 @@ CONTEXTE ACTUEL DE L'INVENTAIRE:
 Réponds en français, de manière concise et actionnable.
 Donne des recommandations pratiques immédiates."""
     
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            max_tokens=500,
-            system=system_prompt,
-            messages=st.session_state.chat_history,
-            timeout=30
-        )
-        
-        assistant_message = response.choices[0].message.content
+    assistant_message = call_openai_api(st.session_state.chat_history, system_prompt)
+    
+    if assistant_message:
         st.session_state.chat_history.append({
             "role": "assistant",
             "content": assistant_message
         })
-        
         return assistant_message
-    except Exception as e:
-        st.error(f"❌ Erreur ChatGPT: {str(e)}")
+    else:
+        st.error("❌ ChatGPT non disponible")
         return None
 
 # ═════════════════════════════════════════════════════════════════════════
