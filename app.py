@@ -239,7 +239,15 @@ html, body {
 def init_firebase():
     try:
         if not firebase_admin._apps:
-            cred = credentials.Certificate(st.secrets.firebase)
+            # Récupère les credentials
+            creds = dict(st.secrets.firebase)
+            
+            # Nettoie les underscores que Streamlit ajoute
+            for key in creds:
+                if isinstance(creds[key], str):
+                    creds[key] = creds[key].replace('__', '')
+            
+            cred = credentials.Certificate(creds)
             firebase_admin.initialize_app(cred)
         return firestore.client()
     except Exception as e:
