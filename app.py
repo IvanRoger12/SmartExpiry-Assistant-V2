@@ -26,7 +26,8 @@ from firebase_admin import credentials, firestore
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from openai import OpenAI
+import requests
+import json
 
 PARIS = tz.gettz("Europe/Paris")
 
