@@ -359,6 +359,17 @@ html, body, [data-testid="stAppViewContainer"] {
 # FIREBASE & FUNCTIONS
 # ═════════════════════════════════════════════════════════════════════════
 
+def call_openai_api(messages, system_prompt):
+    """Appel à l'API OpenAI"""
+    try:
+        api_key = st.secrets.openai.api_key
+        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+        data = {"model": "gpt-4o-mini", "max_tokens": 500, "messages": [{"role": "system", "content": system_prompt}] + messages}
+        response = requests.post("https://api.anthropic.com/v1/messages", headers=headers, json=data, timeout=30)
+        return response.json()['choices'][0]['message']['content'] if response.status_code == 200 else None
+    except:
+        return None
+
 def generate_pdf_report(df, stage, store_id):
     """Génère un PDF avec les produits à retirer"""
     buffer = BytesIO()
