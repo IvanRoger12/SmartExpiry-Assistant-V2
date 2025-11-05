@@ -362,13 +362,30 @@ html, body, [data-testid="stAppViewContainer"] {
 def call_openai_api(messages, system_prompt):
     """Appel à l'API OpenAI"""
     try:
-        api_key = st.secrets.openai.api_key
+        api_key = st.secrets.get("openai_api_key", "")
+        if not api_key:
+            return "⚠️ Clé API OpenAI manquante. Configure les secrets Streamlit."
+        
         headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-        data = {"model": "gpt-4o-mini", "max_tokens": 500, "messages": [{"role": "system", "content": system_prompt}] + messages}
-        response = requests.post("https://api.anthropic.com/v1/messages", headers=headers, json=data, timeout=30)
-        return response.json()['choices'][0]['message']['content'] if response.status_code == 200 else None
-    except:
-        return None
+        data = {
+            "model": "gpt-4-mini",
+            "max_tokens": 500,
+            "messages": [{"role": "system", "content": system_prompt}] + messages
+        }
+        
+        response = requests.post(
+            "https://api.openai.com/v1/chat/completions",
+            headers=headers,
+            json=data,
+            timeout=30
+        )
+        
+        if response.status_code == 200:
+            return response.json()['choices'][0]['message']['content']
+        else:
+            return f"❌ Erreur API: {response.status_code}"
+    except Exception as e:
+        return f"❌ Erreur: {str(e)}"
 
 def generate_pdf_report(df, stage, store_id):
     """Génère un PDF avec les produits à retirer"""
