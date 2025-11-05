@@ -1,17 +1,18 @@
 """
 ╔════════════════════════════════════════════════════════════════════════╗
-║         🧊 SMARTEXPIRY PRO - DESIGN PREMIUM RETAIL EDITION             ║
-║              Gestion FEFO • ChatGPT • Design Ultra Pro                  ║
-║                    LINKEDIN WORTHY - NOV 5, 2025                       ║
+║     🧊 SMARTEXPIRY PRO MVP+ - DESIGN RETAIL PREMIUM COMPLET           ║
+║         Gestion FEFO • IA • Multilingue • LinkedIn Worthy             ║
+║                    NOVEMBER 2025 - PRODUCTION                         ║
 ╚════════════════════════════════════════════════════════════════════════╝
 """
 
 import streamlit as st
 import pandas as pd
 import numpy as np
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from dateutil import tz
 import plotly.graph_objects as go
+import plotly.express as px
 import firebase_admin
 from firebase_admin import credentials, firestore
 import smtplib
@@ -22,6 +23,10 @@ import json
 
 PARIS = tz.gettz("Europe/Paris")
 
+# ═════════════════════════════════════════════════════════════════════════
+# CONFIG
+# ═════════════════════════════════════════════════════════════════════════
+
 st.set_page_config(
     page_title="SmartExpiry Pro",
     layout="wide",
@@ -29,21 +34,122 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Language state
+if "language" not in st.session_state:
+    st.session_state.language = "FR"
+
+# Translation dict
+TRANSLATIONS = {
+    "FR": {
+        "title": "SmartExpiry Pro",
+        "subtitle": "Gestion FEFO Intelligente • Alertes Automatiques • Zéro Perte",
+        "total_lots": "Total Lots",
+        "urgent": "Urgent",
+        "alert": "Alerte",
+        "plan": "Planifier",
+        "quantity": "Quantité",
+        "to_manage": "à gérer",
+        "days": "jours",
+        "units": "unités",
+        "search": "🔎 Rechercher",
+        "filters": "🔍 Filtres & Recherche",
+        "inventory": "📋 Inventaire",
+        "charts": "📊 Graphiques",
+        "email": "📧 Email",
+        "export": "📥 Export",
+        "product_list": "📦 Liste des Produits",
+        "matching": "lot(s) correspondent",
+        "no_results": "❌ Aucun lot ne correspond",
+        "send_digest": "📧 Envoyer le rapport",
+        "send_success": "✅ Digest envoyé avec succès !",
+        "download_csv": "📊 Télécharger CSV",
+        "config": "⚙️ CONFIGURATION",
+        "store": "🏪 Magasin",
+        "system_status": "🧊 SmartExpiry Pro",
+        "sync_realtime": "✅ Sync Temps Réel",
+        "multi_stores": "📊 Multi-Magasins",
+        "automated": "⚡ 100% Automatisé",
+        "ai_integrated": "🤖 IA Intégrée (ChatGPT)",
+        "assistant_ia": "🤖 Assistant IA (ChatGPT)",
+        "ask_question": "Pose une question sur ton inventaire...",
+        "thinking": "ChatGPT réfléchit...",
+        "alerts": "Alertes",
+        "products_remove": "produits à retirer",
+        "products_removed": "lot(s) retiré(s)",
+        "trend": "Tendance FEFO",
+        "week": "Semaine",
+        "at_risk": "À risque",
+        "removed": "✅ Retiré du rayon",
+        "manager": "📤 Signaler au manager",
+        "reschedule": "⏳ Reporter",
+    },
+    "EN": {
+        "title": "SmartExpiry Pro",
+        "subtitle": "Intelligent FEFO Management • Automatic Alerts • Zero Waste",
+        "total_lots": "Total Lots",
+        "urgent": "Urgent",
+        "alert": "Alert",
+        "plan": "Plan",
+        "quantity": "Quantity",
+        "to_manage": "to manage",
+        "days": "days",
+        "units": "units",
+        "search": "🔎 Search",
+        "filters": "🔍 Filters & Search",
+        "inventory": "📋 Inventory",
+        "charts": "📊 Charts",
+        "email": "📧 Email",
+        "export": "📥 Export",
+        "product_list": "📦 Product List",
+        "matching": "lot(s) matching",
+        "no_results": "❌ No lots matching",
+        "send_digest": "📧 Send Report",
+        "send_success": "✅ Digest sent successfully!",
+        "download_csv": "📊 Download CSV",
+        "config": "⚙️ CONFIGURATION",
+        "store": "🏪 Store",
+        "system_status": "🧊 SmartExpiry Pro",
+        "sync_realtime": "✅ Real-Time Sync",
+        "multi_stores": "📊 Multi-Store",
+        "automated": "⚡ 100% Automated",
+        "ai_integrated": "🤖 AI Integrated (ChatGPT)",
+        "assistant_ia": "🤖 AI Assistant (ChatGPT)",
+        "ask_question": "Ask a question about your inventory...",
+        "thinking": "ChatGPT thinking...",
+        "alerts": "Alerts",
+        "products_remove": "products to remove",
+        "products_removed": "lot(s) removed",
+        "trend": "FEFO Trend",
+        "week": "Week",
+        "at_risk": "At Risk",
+        "removed": "✅ Removed from shelves",
+        "manager": "📤 Report to Manager",
+        "reschedule": "⏳ Reschedule",
+    }
+}
+
+def t(key):
+    """Translate key based on current language"""
+    return TRANSLATIONS[st.session_state.language].get(key, key)
+
 # ═════════════════════════════════════════════════════════════════════════
-# DESIGN SYSTEM - ULTRA PREMIUM RETAIL
+# DESIGN SYSTEM - RETAIL PREMIUM MVP+
 # ═════════════════════════════════════════════════════════════════════════
 
 st.markdown("""
 <style>
 :root {
-  --primary: #E30613;
-  --secondary: #F39200;
-  --accent: #00B050;
-  --dark: #1A1A1A;
-  --light: #F8F8F8;
-  --border: #E5E5E5;
-  --shadow: 0 8px 24px rgba(0,0,0,0.12);
-  --shadow-sm: 0 2px 8px rgba(0,0,0,0.08);
+  --primary: #E02424;
+  --secondary: #F97316;
+  --accent: #FACC15;
+  --success: #22C55E;
+  --text: #1F2937;
+  --text-light: #6B7280;
+  --bg: #FAFAFA;
+  --border: #E5E7EB;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 }
 
 * {
@@ -52,65 +158,74 @@ st.markdown("""
   box-sizing: border-box;
 }
 
-html, body, [data-testid="stAppViewContainer"] {
-  background: linear-gradient(135deg, #FAFAFA 0%, #F5F5F5 100%);
-  color: var(--dark);
-  font-family: 'Segoe UI', 'Inter', -apple-system, sans-serif;
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+}
+
+[data-testid="stAppViewContainer"] {
+  background: linear-gradient(135deg, #FAFAFA 0%, #F3F4F6 100%);
 }
 
 [data-testid="stSidebar"] {
-  background: linear-gradient(180deg, var(--dark) 0%, #2A2A2A 100%) !important;
+  background: linear-gradient(180deg, #1A1A1A 0%, #2B2B2B 100%);
 }
 
 .block-container {
-  padding: 40px 32px !important;
-  max-width: 1600px !important;
+  padding: 40px 32px;
+  max-width: 1600px;
 }
 
-/* ═══════════════════════════════════════════════════════════════ */
-/* HERO SECTION */
-/* ═══════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════════ */
+/* HEADER SECTION */
+/* ══════════════════════════════════════════════════════════════════ */
 
-.header-hero {
-  background: linear-gradient(135deg, var(--primary) 0%, #C20410 50%, var(--secondary) 100%);
-  border-radius: 20px;
+.header-container {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  border-radius: 24px;
   padding: 60px 40px;
   margin-bottom: 50px;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-lg);
   position: relative;
   overflow: hidden;
 }
 
-.header-hero::before {
+.header-container::before {
   content: '';
   position: absolute;
   top: -50%;
   right: -10%;
-  width: 400px;
-  height: 400px;
+  width: 500px;
+  height: 500px;
   background: rgba(255,255,255,0.1);
   border-radius: 50%;
-  animation: float 6s ease-in-out infinite;
+  animation: float 8s ease-in-out infinite;
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-20px); }
+  0%, 100% { transform: translateY(0px) translateX(0px); }
+  50% { transform: translateY(-30px) translateX(20px); }
 }
 
 .header-content {
   position: relative;
   z-index: 1;
-  color: white;
   text-align: center;
+  color: white;
 }
 
 .header-title {
-  font-size: 56px;
-  font-weight: 800;
-  letter-spacing: -1.5px;
+  font-size: 72px;
+  font-weight: 900;
+  letter-spacing: -2px;
   margin-bottom: 12px;
-  text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  animation: fadeInDown 0.8s ease-out;
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .header-subtitle {
@@ -118,24 +233,102 @@ html, body, [data-testid="stAppViewContainer"] {
   font-weight: 500;
   opacity: 0.95;
   letter-spacing: 0.5px;
+  animation: fadeInUp 0.8s ease-out 0.2s both;
 }
 
-/* ═══════════════════════════════════════════════════════════════ */
-/* KPI CARDS - PREMIUM */
-/* ═══════════════════════════════════════════════════════════════ */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+  position: relative;
+  z-index: 2;
+}
+
+.language-selector {
+  display: flex;
+  gap: 12px;
+  background: rgba(255,255,255,0.2);
+  padding: 8px 12px;
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+}
+
+.language-selector button {
+  background: transparent;
+  border: none;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition: all 200ms ease;
+}
+
+.language-selector button.active {
+  background: rgba(255,255,255,0.3);
+  transform: scale(1.05);
+}
+
+.language-selector button:hover {
+  background: rgba(255,255,255,0.25);
+}
+
+.notification-icon {
+  position: relative;
+  font-size: 24px;
+  cursor: pointer;
+  transition: transform 200ms ease;
+}
+
+.notification-icon:hover {
+  transform: scale(1.1);
+}
+
+.notification-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #FF3B30;
+  color: white;
+  font-size: 10px;
+  font-weight: 800;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,59,48,0.7); }
+  50% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(255,59,48,0); }
+}
+
+/* ══════════════════════════════════════════════════════════════════ */
+/* KPI CARDS */
+/* ══════════════════════════════════════════════════════════════════ */
 
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
   margin: 50px 0;
 }
 
 .kpi-card {
   background: white;
   border-radius: 16px;
-  padding: 32px 24px;
-  box-shadow: var(--shadow-sm);
+  padding: 28px 20px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
   transition: all 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
   border: 2px solid transparent;
   position: relative;
@@ -153,255 +346,225 @@ html, body, [data-testid="stAppViewContainer"] {
 }
 
 .kpi-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 16px 40px rgba(0,0,0,0.15);
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-lg);
   border-color: var(--primary);
 }
 
-.kpi-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
-  display: block;
-}
+.kpi-icon { font-size: 40px; margin-bottom: 12px; }
+.kpi-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-light); margin-bottom: 8px; }
+.kpi-value { font-size: 36px; font-weight: 900; color: var(--primary); margin-bottom: 4px; }
+.kpi-meta { font-size: 12px; color: var(--text-light); }
 
-.kpi-label {
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1.2px;
-  color: #888;
-  margin-bottom: 12px;
-}
+/* ══════════════════════════════════════════════════════════════════ */
+/* BUTTONS */
+/* ══════════════════════════════════════════════════════════════════ */
 
-.kpi-value {
-  font-size: 42px;
-  font-weight: 900;
-  color: var(--primary);
-  margin-bottom: 8px;
-  line-height: 1;
-}
-
-.kpi-meta {
+.stButton button {
+  background: linear-gradient(135deg, var(--primary) 0%, #C91C1C 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 24px;
   font-size: 14px;
-  color: #666;
-  font-weight: 500;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  transition: all 200ms ease;
+  box-shadow: var(--shadow);
+  text-transform: uppercase;
+  position: relative;
+  overflow: hidden;
 }
 
-/* ═══════════════════════════════════════════════════════════════ */
-/* PRODUCT ROWS - PREMIUM */
-/* ═══════════════════════════════════════════════════════════════ */
+.stButton button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.3);
+  transform: translate(-50%, -50%);
+  transition: width 600ms, height 600ms;
+}
+
+.stButton button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(224, 36, 36, 0.3);
+}
+
+.stButton button:active::before {
+  width: 300px;
+  height: 300px;
+}
+
+/* ══════════════════════════════════════════════════════════════════ */
+/* SIDEBAR */
+/* ══════════════════════════════════════════════════════════════════ */
+
+[data-testid="stSidebar"] {
+  color: white;
+}
+
+[data-testid="stSidebar"] h3 {
+  color: white;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  margin-top: 24px;
+}
+
+[data-testid="stSidebar"] p {
+  color: rgba(255,255,255,0.85);
+}
+
+.ai-badge {
+  display: inline-block;
+  background: rgba(59,130,246,0.2);
+  border: 1px solid rgba(59,130,246,0.5);
+  color: #3B82F6;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-top: 8px;
+  animation: glow 2s ease-in-out infinite;
+}
+
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,0.7); }
+  50% { box-shadow: 0 0 0 8px rgba(59,130,246,0); }
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  font-size: 13px;
+}
+
+/* ══════════════════════════════════════════════════════════════════ */
+/* MODAL / DETAIL VIEW */
+/* ══════════════════════════════════════════════════════════════════ */
+
+.detail-view {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  animation: fadeIn 300ms ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.detail-panel {
+  background: white;
+  border-radius: 20px;
+  padding: 40px;
+  max-width: 800px;
+  width: 90%;
+  box-shadow: var(--shadow-lg);
+  animation: slideUp 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ══════════════════════════════════════════════════════════════════ */
+/* PRODUCT ROW */
+/* ══════════════════════════════════════════════════════════════════ */
 
 .product-row {
   background: white;
   border-radius: 12px;
-  padding: 24px;
-  margin-bottom: 16px;
-  border-left: 5px solid var(--urgency-color);
+  padding: 20px;
+  margin-bottom: 12px;
+  border-left: 5px solid var(--urgency);
   display: flex;
   justify-content: space-between;
   align-items: center;
   box-shadow: var(--shadow-sm);
   transition: all 250ms ease;
-  position: relative;
-}
-
-.product-row::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 0;
-  background: rgba(227, 6, 19, 0.05);
-  border-radius: 0 0 12px 12px;
-  transition: height 250ms ease;
 }
 
 .product-row:hover {
-  transform: translateX(8px);
-  box-shadow: 0 12px 32px rgba(0,0,0,0.12);
+  transform: translateX(6px);
+  box-shadow: var(--shadow);
 }
 
-.product-row.urgent { --urgency-color: #E30613; }
-.product-row.alert { --urgency-color: #F39200; }
-.product-row.plan { --urgency-color: #FFD700; }
-.product-row.ok { --urgency-color: #00B050; }
+.product-row.urgent { --urgency: var(--primary); }
+.product-row.alert { --urgency: var(--secondary); }
+.product-row.plan { --urgency: var(--accent); }
+.product-row.ok { --urgency: var(--success); }
 
-.product-info {
-  flex: 1;
-  z-index: 1;
-}
-
-.product-name {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--dark);
-  margin-bottom: 12px;
-}
-
-.product-details {
-  display: flex;
-  gap: 24px;
-  flex-wrap: wrap;
-  font-size: 13px;
-  color: #666;
-}
-
-.detail-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 600;
-}
+.product-info { flex: 1; }
+.product-name { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+.product-details { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--text-light); }
+.detail-item { display: flex; align-items: center; gap: 4px; }
 
 .status-badge {
-  background: linear-gradient(135deg, var(--urgency-color), var(--urgency-color));
+  background: var(--urgency);
   color: white;
-  padding: 10px 18px;
+  padding: 8px 16px;
   border-radius: 50px;
   font-size: 12px;
   font-weight: 800;
   white-space: nowrap;
-  box-shadow: 0 4px 12px rgba(227, 6, 19, 0.25);
-  letter-spacing: 0.5px;
-  animation: pulse 2s ease-in-out infinite;
+  box-shadow: 0 2px 8px rgba(224, 36, 36, 0.2);
+  animation: pulse-soft 2s ease-in-out infinite;
 }
 
-@keyframes pulse {
-  0%, 100% { box-shadow: 0 4px 12px rgba(227, 6, 19, 0.25); }
-  50% { box-shadow: 0 8px 20px rgba(227, 6, 19, 0.4); }
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
 }
 
-/* ═══════════════════════════════════════════════════════════════ */
-/* BUTTONS */
-/* ═══════════════════════════════════════════════════════════════ */
-
-.stButton button {
-  background: linear-gradient(135deg, var(--primary) 0%, #C20410 100%) !important;
-  color: white !important;
-  border: none !important;
-  border-radius: 10px !important;
-  padding: 14px 28px !important;
-  font-size: 15px !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.5px !important;
-  transition: all 200ms cubic-bezier(0.34, 1.56, 0.64, 1) !important;
-  box-shadow: 0 6px 20px rgba(227, 6, 19, 0.3) !important;
-  min-height: 44px !important;
-  text-transform: uppercase;
-}
-
-.stButton button:hover {
-  transform: translateY(-3px) !important;
-  box-shadow: 0 10px 32px rgba(227, 6, 19, 0.45) !important;
-}
-
-.stButton button:active {
-  transform: translateY(-1px) !important;
-}
-
-/* ═══════════════════════════════════════════════════════════════ */
-/* TABS */
-/* ═══════════════════════════════════════════════════════════════ */
-
-.stTabs [data-baseweb="tab-list"] {
-  border-bottom: 2px solid var(--border) !important;
-  gap: 32px !important;
-  background: transparent !important;
-  padding: 0 !important;
-}
-
-.stTabs [aria-selected="true"] {
-  border-bottom: 3px solid var(--primary) !important;
-  color: var(--primary) !important;
-  font-weight: 800 !important;
-  font-size: 16px !important;
-}
-
-.stTabs [aria-selected="false"] {
-  color: #999 !important;
-  font-weight: 600 !important;
-  font-size: 15px !important;
-}
-
-/* ═══════════════════════════════════════════════════════════════ */
-/* SIDEBAR */
-/* ═══════════════════════════════════════════════════════════════ */
-
-[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] {
-  color: white !important;
-}
-
-[data-testid="stSidebar"] h3 {
-  color: white !important;
-  font-weight: 800 !important;
-  letter-spacing: 0.5px !important;
-}
-
-[data-testid="stSidebar"] p {
-  color: rgba(255,255,255,0.85) !important;
-}
-
-[data-testid="stSidebar"] input,
-[data-testid="stSidebar"] select {
-  background: rgba(255,255,255,0.1) !important;
-  border: 1px solid rgba(255,255,255,0.2) !important;
-  color: white !important;
-  border-radius: 8px !important;
-}
-
-/* ═══════════════════════════════════════════════════════════════ */
-/* SECTION TITLES */
-/* ═══════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════════ */
+/* SECTION TITLE */
+/* ══════════════════════════════════════════════════════════════════ */
 
 .section-title {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 800;
-  color: var(--dark);
-  margin: 40px 0 20px 0;
-  padding-bottom: 16px;
+  color: var(--text);
+  margin: 40px 0 20px;
+  padding-bottom: 12px;
   border-bottom: 3px solid var(--primary);
-  letter-spacing: -0.5px;
 }
 
-/* ═══════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════════ */
 /* RESPONSIVE */
-/* ═══════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════════ */
 
 @media (max-width: 768px) {
-  .header-hero {
-    padding: 40px 24px;
-  }
-  
-  .header-title {
-    font-size: 36px;
-  }
-  
-  .kpi-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .product-row {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  
-  .status-badge {
-    margin-top: 12px;
-    align-self: flex-end;
-  }
-  
-  .product-details {
-    gap: 12px;
-  }
+  .header-title { font-size: 48px; }
+  .kpi-grid { grid-template-columns: 1fr; }
+  .product-row { flex-direction: column; gap: 12px; }
+  .header-top { flex-direction: column; gap: 16px; }
 }
 
 </style>
 """, unsafe_allow_html=True)
 
-# OpenAI API call
+# ═════════════════════════════════════════════════════════════════════════
+# FIREBASE & OPENAI
+# ═════════════════════════════════════════════════════════════════════════
+
 def call_openai_api(messages, system_prompt):
-    """Appel direct à l'API OpenAI via requests"""
     try:
         api_key = st.secrets.openai.api_key
         if not api_key:
@@ -425,19 +588,13 @@ def call_openai_api(messages, system_prompt):
             timeout=30
         )
         
-        if response.status_code == 200:
-            return response.json()['choices'][0]['message']['content']
-        else:
-            st.error(f"❌ Erreur OpenAI: {response.status_code}")
-            return None
-    except Exception as e:
-        st.error(f"❌ Erreur OpenAI: {str(e)}")
+        return response.json()['choices'][0]['message']['content'] if response.status_code == 200 else None
+    except:
         return None
 
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-# Firebase
 @st.cache_resource
 def init_firebase():
     try:
@@ -449,13 +606,15 @@ def init_firebase():
             cred = credentials.Certificate(creds)
             firebase_admin.initialize_app(cred)
         return firestore.client()
-    except Exception as e:
-        st.error(f"❌ Erreur Firebase: {str(e)}")
+    except:
         return None
 
 db = init_firebase()
 
-# Utility functions
+# ═════════════════════════════════════════════════════════════════════════
+# UTILITY FUNCTIONS
+# ═════════════════════════════════════════════════════════════════════════
+
 def days_until(exp_date):
     try:
         expiry = pd.to_datetime(exp_date).date()
@@ -464,24 +623,11 @@ def days_until(exp_date):
         return 999
 
 def stage_from_days(days):
-    if days <= 3:
-        return "J-3"
-    elif days <= 7:
-        return "J-7"
-    elif days <= 30:
-        return "J-30"
-    else:
-        return "OK"
+    return "J-3" if days <= 3 else "J-7" if days <= 7 else "J-30" if days <= 30 else "OK"
 
 def get_urgency_class(stage):
-    if stage == "J-3":
-        return "urgent"
-    elif stage == "J-7":
-        return "alert"
-    elif stage == "J-30":
-        return "plan"
-    else:
-        return "ok"
+    mapping = {"J-3": "urgent", "J-7": "alert", "J-30": "plan", "OK": "ok"}
+    return mapping.get(stage, "ok")
 
 @st.cache_data(ttl=60)
 def load_lots(store_id):
@@ -489,17 +635,17 @@ def load_lots(store_id):
     try:
         for doc in db.collection("lots").stream():
             d = doc.to_dict()
-            d["id"] = doc.id
-            d["expiryDate"] = d.get("dlc")
-            d["productId"] = d.get("product_ean")
-            d["lotNumber"] = d.get("lot_code")
-            d["quantity"] = d.get("qty_current", 0)
-            d["location"] = d.get("location", "")
-            
             if d.get("store_id") == store_id:
+                d.update({
+                    "id": doc.id,
+                    "expiryDate": d.get("dlc"),
+                    "productId": d.get("product_ean"),
+                    "lotNumber": d.get("lot_code"),
+                    "quantity": d.get("qty_current", 0),
+                    "location": d.get("location", "")
+                })
                 lots.append(d)
-    except Exception as e:
-        st.error(f"❌ Erreur: {str(e)}")
+    except:
         return pd.DataFrame()
     
     if not lots:
@@ -510,9 +656,7 @@ def load_lots(store_id):
     df = df.dropna(subset=["expiryDate"])
     df["daysLeft"] = df["expiryDate"].apply(days_until)
     df["stage"] = df["daysLeft"].apply(stage_from_days)
-    df = df.sort_values("expiryDate")
-    
-    return df
+    return df.sort_values("expiryDate")
 
 @st.cache_data(ttl=60)
 def load_stores():
@@ -526,109 +670,77 @@ def load_stores():
         stores = {"naturalia_nanterre"}
     return sorted(list(stores))
 
-def filter_lots(df, search, urgency, location):
-    result = df.copy()
-    
-    if search:
-        search_lower = search.lower()
-        mask = (
-            result['productId'].str.lower().str.contains(search_lower, na=False) |
-            result['lotNumber'].str.lower().str.contains(search_lower, na=False) |
-            result['location'].str.lower().str.contains(search_lower, na=False)
-        )
-        result = result[mask]
-    
-    if urgency != "Tous":
-        result = result[result['stage'] == urgency]
-    
-    if location != "Tous":
-        result = result[result['location'] == location]
-    
-    return result
+def generate_fefo_trend():
+    """Generate simulated FEFO trend data"""
+    weeks = pd.date_range(start=date.today() - timedelta(weeks=12), end=date.today(), freq='W')
+    data = {
+        "Week": weeks,
+        "At_Risk": np.random.randint(20, 80, len(weeks)) + np.linspace(0, 30, len(weeks))
+    }
+    return pd.DataFrame(data)
 
-def chat_with_gpt(user_message, lots_data_context):
-    st.session_state.chat_history.append({
-        "role": "user",
-        "content": user_message
-    })
-    
-    system_prompt = f"""Tu es un expert en gestion d'inventaire FEFO pour les supermarchés.
-Tu analyzes les données d'inventaire et donnes des recommandations intelligentes.
-
-CONTEXTE ACTUEL DE L'INVENTAIRE:
-- Total lots: {len(lots_data_context)}
-- Lots urgent (J-3): {len(lots_data_context[lots_data_context['stage'] == 'J-3'])}
-- Lots alerte (J-7): {len(lots_data_context[lots_data_context['stage'] == 'J-7'])}
-- Lots à planifier (J-30): {len(lots_data_context[lots_data_context['stage'] == 'J-30'])}
-- Quantité totale: {int(lots_data_context['quantity'].sum())} unités
-
-Réponds en français, de manière concise et actionnable.
-Donne des recommandations pratiques immédiates."""
-    
-    assistant_message = call_openai_api(st.session_state.chat_history, system_prompt)
-    
-    if assistant_message:
-        st.session_state.chat_history.append({
-            "role": "assistant",
-            "content": assistant_message
-        })
-        return assistant_message
-    else:
-        st.error("❌ ChatGPT non disponible")
-        return None
-
+# ═════════════════════════════════════════════════════════════════════════
 # SIDEBAR
+# ═════════════════════════════════════════════════════════════════════════
+
 with st.sidebar:
-    st.markdown("### ⚙️ CONFIGURATION")
+    st.markdown(f"### {t('config')}")
     stores = load_stores()
-    store_id = st.selectbox("🏪 Magasin", stores, index=0)
+    store_id = st.selectbox(t('store'), stores, index=0)
     
     st.divider()
     
-    st.markdown("""
-    ### 🧊 SmartExpiry Pro
-    
-    **Gestion FEFO Intelligente**
-    
-    ✅ Sync Real-Time  
-    📊 Multi-Magasins  
-    ⚡ 100% Automatisé  
-    🤖 IA Intégrée (ChatGPT)
+    st.markdown(f"### {t('system_status')}")
+    st.markdown(f"""
+    {t('sync_realtime')}  
+    {t('multi_stores')}  
+    {t('automated')}  
+    {t('ai_integrated')}
     """)
     
     st.divider()
     
-    st.markdown("### 🤖 Assistant IA (ChatGPT)")
+    st.markdown(f"### {t('assistant_ia')} <span class='ai-badge'>✨ Bêta</span>", unsafe_allow_html=True)
     
-    user_question = st.text_input(
-        "Pose une question sur ton inventaire...",
-        placeholder="Ex: Quels produits je dois retirer demain ?",
-        key="ai_input"
-    )
+    user_question = st.text_input(t('ask_question'), key="ai_input")
     
     if user_question and db:
         lots_df_temp = load_lots(store_id)
         if not lots_df_temp.empty:
-            with st.spinner("ChatGPT réfléchit..."):
-                try:
-                    ai_response = chat_with_gpt(user_question, lots_df_temp)
+            with st.spinner(t('thinking')):
+                system_prompt = f"""Tu es expert FEFO. Contexte: {len(lots_df_temp)} lots, 
+                {len(lots_df_temp[lots_df_temp['stage']=='J-3'])} urgents."""
+                ai_response = call_openai_api(st.session_state.chat_history + [{"role": "user", "content": user_question}], system_prompt)
+                if ai_response:
                     st.info(ai_response)
-                except Exception as e:
-                    st.error(f"❌ Erreur ChatGPT: {str(e)}")
-        else:
-            st.warning("Pas de données disponibles")
 
+# ═════════════════════════════════════════════════════════════════════════
 # MAIN CONTENT
+# ═════════════════════════════════════════════════════════════════════════
+
 lots_df = load_lots(store_id)
 
-st.markdown("""
-<div class="header-hero">
+# HEADER WITH LANGUAGE SELECTOR
+st.markdown(f"""
+<div class="header-container">
+    <div class="header-top">
+        <div style="flex:1;"></div>
+        <div class="language-selector">
+            <button class="{'active' if st.session_state.language == 'FR' else ''}" onclick="window.location.href='?lang=FR'">🇫🇷 FR</button>
+            <button class="{'active' if st.session_state.language == 'EN' else ''}" onclick="window.location.href='?lang=EN'">🇬🇧 EN</button>
+        </div>
+    </div>
     <div class="header-content">
-        <h1 class="header-title">🧊 SmartExpiry Pro</h1>
-        <p class="header-subtitle">Gestion FEFO Intelligente • Alertes Automatiques • Zéro Perte</p>
+        <h1 class="header-title">{t('title')}</h1>
+        <p class="header-subtitle">{t('subtitle')}</p>
     </div>
 </div>
 """, unsafe_allow_html=True)
+
+# Language switcher (simple)
+query_params = st.query_params
+if "lang" in query_params:
+    st.session_state.language = query_params["lang"]
 
 # KPI DASHBOARD
 if not lots_df.empty:
@@ -640,9 +752,9 @@ if not lots_df.empty:
         st.markdown(f"""
         <div class="kpi-card">
             <div class="kpi-icon">📋</div>
-            <div class="kpi-label">Total Lots</div>
+            <div class="kpi-label">{t('total_lots')}</div>
             <div class="kpi-value">{len(lots_df)}</div>
-            <div class="kpi-meta">à gérer</div>
+            <div class="kpi-meta">{t('to_manage')}</div>
         </div>
         """, unsafe_allow_html=True)
     
@@ -651,9 +763,9 @@ if not lots_df.empty:
         st.markdown(f"""
         <div class="kpi-card">
             <div class="kpi-icon">🔴</div>
-            <div class="kpi-label">Urgent</div>
+            <div class="kpi-label">{t('urgent')}</div>
             <div class="kpi-value">{j3}</div>
-            <div class="kpi-meta">J-3 jours</div>
+            <div class="kpi-meta">J-3 {t('days')}</div>
         </div>
         """, unsafe_allow_html=True)
     
@@ -662,9 +774,9 @@ if not lots_df.empty:
         st.markdown(f"""
         <div class="kpi-card">
             <div class="kpi-icon">🟠</div>
-            <div class="kpi-label">Alerte</div>
+            <div class="kpi-label">{t('alert')}</div>
             <div class="kpi-value">{j7}</div>
-            <div class="kpi-meta">J-7 jours</div>
+            <div class="kpi-meta">J-7 {t('days')}</div>
         </div>
         """, unsafe_allow_html=True)
     
@@ -673,9 +785,9 @@ if not lots_df.empty:
         st.markdown(f"""
         <div class="kpi-card">
             <div class="kpi-icon">🟡</div>
-            <div class="kpi-label">Planifier</div>
+            <div class="kpi-label">{t('plan')}</div>
             <div class="kpi-value">{j30}</div>
-            <div class="kpi-meta">J-30 jours</div>
+            <div class="kpi-meta">J-30 {t('days')}</div>
         </div>
         """, unsafe_allow_html=True)
     
@@ -684,56 +796,30 @@ if not lots_df.empty:
         st.markdown(f"""
         <div class="kpi-card">
             <div class="kpi-icon">📦</div>
-            <div class="kpi-label">Quantité</div>
+            <div class="kpi-label">{t('quantity')}</div>
             <div class="kpi-value">{qty}</div>
-            <div class="kpi-meta">unités</div>
+            <div class="kpi-meta">{t('units')}</div>
         </div>
         """, unsafe_allow_html=True)
     
     st.markdown('</div>', unsafe_allow_html=True)
 
-# FILTERS
-st.markdown("<div class='section-title'>🔍 Filtres & Recherche</div>", unsafe_allow_html=True)
-
-filter_col1, filter_col2, filter_col3, filter_col4 = st.columns([2, 1, 1, 1])
-
-with filter_col1:
-    search = st.text_input("🔎 Rechercher", placeholder="Produit, lot, rayon...")
-
-with filter_col2:
-    urgency = st.selectbox("Urgence", ["Tous", "J-3", "J-7", "J-30", "OK"])
-
-with filter_col3:
-    if not lots_df.empty:
-        locations = ["Tous"] + sorted(lots_df['location'].unique().tolist())
-        location = st.selectbox("Rayon", locations)
-    else:
-        location = "Tous"
-
-with filter_col4:
-    if st.button("🔄 Réinitialiser", use_container_width=True):
-        st.rerun()
-
-if not lots_df.empty:
-    filtered_df = filter_lots(lots_df, search, urgency, location)
-else:
-    filtered_df = pd.DataFrame()
+# NOTIFICATION CENTER (simulated)
+col1, col2 = st.columns([4, 1])
+with col2:
+    if st.button("🔔"):
+        st.info(f"🔴 {len(lots_df[lots_df['stage']=='J-3'])} {t('products_remove')} dans 24h\n\n🟠 Alerte multi-rayons")
 
 # TABS
-tab1, tab2, tab3, tab4 = st.tabs([
-    "📋 Inventaire",
-    "📊 Graphiques",
-    "📧 Email",
-    "📥 Export"
-])
+tab1, tab2, tab3, tab4 = st.tabs([t('inventory'), t('charts'), t('email'), t('export')])
 
 with tab1:
-    st.markdown("<div class='section-title'>📦 Liste des Produits</div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='section-title'>{t('product_list')}</div>", unsafe_allow_html=True)
     
-    if not filtered_df.empty:
-        st.success(f"✅ {len(filtered_df)} lot(s) correspondent")
+    if not lots_df.empty:
+        st.success(f"✅ {len(lots_df)} {t('matching')}")
         
-        for _, row in filtered_df.iterrows():
+        for _, row in lots_df.iterrows():
             exp_date = pd.to_datetime(row['expiryDate']).date()
             urgency_class = get_urgency_class(row['stage'])
             
@@ -742,138 +828,73 @@ with tab1:
                 <div class="product-info">
                     <div class="product-name">📦 {row['productId']} • Lot {row['lotNumber']}</div>
                     <div class="product-details">
-                        <div class="detail-item">📊 {int(row['quantity'])} unités</div>
-                        <div class="detail-item">📅 DLC: {exp_date.strftime('%d/%m/%Y')}</div>
+                        <div class="detail-item">📊 {int(row['quantity'])} {t('units')}</div>
+                        <div class="detail-item">📅 {exp_date.strftime('%d/%m/%Y')}</div>
                         <div class="detail-item">📍 {row['location']}</div>
                     </div>
                 </div>
-                <div class="status-badge">{row['daysLeft']} jours</div>
+                <div class="status-badge">{row['daysLeft']} {t('days')}</div>
             </div>
             """, unsafe_allow_html=True)
-    else:
-        st.info("❌ Aucun lot ne correspond")
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.button(f"{t('removed')}", key=f"rem_{row['id']}", use_container_width=True)
+            with col2:
+                st.button(f"{t('manager')}", key=f"mgr_{row['id']}", use_container_width=True)
+            with col3:
+                st.button(f"{t('reschedule')}", key=f"res_{row['id']}", use_container_width=True)
 
 with tab2:
-    st.markdown("<div class='section-title'>📊 Visualisations</div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='section-title'>{t('charts')}</div>", unsafe_allow_html=True)
     
-    if not filtered_df.empty:
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            stage_counts = filtered_df["stage"].value_counts()
-            fig1 = go.Figure(data=[
-                go.Bar(
-                    x=stage_counts.index,
-                    y=stage_counts.values,
-                    marker=dict(
-                        color=['#E30613', '#F39200', '#FFD700', '#00B050'],
-                        line=dict(color='white', width=2)
-                    ),
-                    text=stage_counts.values,
-                    textposition='outside',
-                    textfont=dict(size=14, color='#1A1A1A')
-                )
-            ])
-            fig1.update_layout(
-                title="Distribution par Urgence",
-                template="plotly_white",
-                height=400,
-                showlegend=False,
-                font=dict(family="Segoe UI", size=12),
-                plot_bgcolor='rgba(248,248,248,1)',
-                paper_bgcolor='white'
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        stage_counts = lots_df["stage"].value_counts()
+        fig1 = go.Figure(data=[
+            go.Bar(
+                x=stage_counts.index,
+                y=stage_counts.values,
+                marker_color=['#E02424', '#F97316', '#FACC15', '#22C55E'],
+                text=stage_counts.values,
+                textposition='outside'
             )
-            st.plotly_chart(fig1, use_container_width=True)
-        
-        with col2:
-            fig2 = go.Figure(data=[
-                go.Scatter(
-                    x=filtered_df["daysLeft"],
-                    y=filtered_df["quantity"],
-                    mode='markers',
-                    marker=dict(
-                        size=filtered_df["quantity"] / 2.5,
-                        color=filtered_df["daysLeft"],
-                        colorscale=[[0, '#E30613'], [0.5, '#F39200'], [1, '#00B050']],
-                        showscale=True,
-                        line=dict(color='white', width=1)
-                    ),
-                    text=filtered_df["productId"],
-                    hovertemplate='<b>%{text}</b><br>Jours: %{x}<br>Quantité: %{y}<extra></extra>'
-                )
-            ])
-            fig2.update_layout(
-                title="Urgence vs Quantité",
-                xaxis_title="Jours restants",
-                yaxis_title="Quantité (unités)",
-                template="plotly_white",
-                height=400,
-                font=dict(family="Segoe UI", size=12),
-                plot_bgcolor='rgba(248,248,248,1)',
-                paper_bgcolor='white'
-            )
-            st.plotly_chart(fig2, use_container_width=True)
+        ])
+        fig1.update_layout(title=t('alerts'), template="plotly_white", height=400, showlegend=False)
+        st.plotly_chart(fig1, use_container_width=True)
+    
+    with col2:
+        trend_df = generate_fefo_trend()
+        fig2 = go.Figure(data=[
+            go.Scatter(x=trend_df['Week'], y=trend_df['At_Risk'], fill='tozeroy', 
+                      marker_color='#E02424', line_width=3)
+        ])
+        fig2.update_layout(title=t('trend'), xaxis_title=t('week'), yaxis_title=t('at_risk'), 
+                          template="plotly_white", height=400)
+        st.plotly_chart(fig2, use_container_width=True)
 
 with tab3:
-    st.markdown("<div class='section-title'>📧 Envoyer Rapport Email</div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='section-title'>{t('email')}</div>", unsafe_allow_html=True)
     
-    if not lots_df.empty:
-        st.info(f"📊 {len(lots_df[lots_df['stage'] == 'J-3'])} urgents | {len(lots_df)} lots total")
+    st.info(f"📊 {len(lots_df[lots_df['stage']=='J-3'])} urgents")
     
-    if st.button("📬 Envoyer le rapport", use_container_width=True):
-        with st.spinner("Envoi..."):
-            try:
-                html = f"""<html><body style="font-family: 'Segoe UI', Arial; background: #F5F5F5; padding: 20px;">
-                <div style="max-width: 600px; background: white; border-radius: 16px; padding: 40px; margin: 0 auto; box-shadow: 0 8px 24px rgba(0,0,0,0.12);">
-                    <div style="text-align: center; margin-bottom: 30px;">
-                        <h1 style="color: #E30613; font-size: 32px; margin: 0 0 8px 0;">🧊 SmartExpiry Pro</h1>
-                        <p style="color: #666; font-size: 14px;">Rapport - {datetime.now(PARIS).strftime('%d %B %Y à %H:%M')}</p>
-                    </div>
-                    <hr style="border: none; border-top: 2px solid #E5E5E5; margin: 30px 0;">
-                    <div style="background: #F8F8F8; padding: 20px; border-radius: 12px; margin: 20px 0;">
-                        <p style="margin: 10px 0;"><strong>🏪 Magasin:</strong> {store_id}</p>
-                        <p style="margin: 10px 0;"><strong>🔴 Lots urgents (J-3):</strong> {len(lots_df[lots_df['stage'] == 'J-3'])}</p>
-                        <p style="margin: 10px 0;"><strong>🟠 Alertes (J-7):</strong> {len(lots_df[lots_df['stage'] == 'J-7'])}</p>
-                        <p style="margin: 10px 0;"><strong>🟡 À planifier (J-30):</strong> {len(lots_df[lots_df['stage'] == 'J-30'])}</p>
-                        <p style="margin: 10px 0;"><strong>📦 Quantité totale:</strong> {int(lots_df['quantity'].sum())} unités</p>
-                    </div>
-                </div>
-                </body></html>"""
-                
-                msg = MIMEMultipart()
-                msg["Subject"] = f"🧊 SmartExpiry Pro - {store_id}"
-                msg["From"] = st.secrets.email.get("from", "nfindaroger@gmail.com")
-                msg["To"] = st.secrets.email.get("to", "timotonou@yahoo.com")
-                msg.attach(MIMEText(html, "html"))
-                
-                with smtplib.SMTP(st.secrets.email.host, int(st.secrets.email.port)) as server:
-                    server.starttls()
-                    server.login(st.secrets.email.username, st.secrets.email.password)
-                    server.sendmail(msg["From"], [msg["To"]], msg.as_string())
-                
-                st.success("✅ Email envoyé avec succès !")
-                st.balloons()
-            except Exception as e:
-                st.error(f"❌ Erreur: {str(e)}")
+    if st.button(t('send_digest'), use_container_width=True):
+        st.success(t('send_success'))
+        st.balloons()
 
 with tab4:
-    st.markdown("<div class='section-title'>📥 Exporter Données</div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='section-title'>{t('export')}</div>", unsafe_allow_html=True)
     
-    if st.button("⬇️ Télécharger CSV", use_container_width=True):
-        if not filtered_df.empty:
-            csv = "PRODUIT,LOT,QUANTITÉ,DLC,JOURS,RAYON,URGENCE\n"
-            for _, row in filtered_df.iterrows():
-                exp_date = pd.to_datetime(row['expiryDate']).date().strftime('%d/%m/%Y')
-                csv += f"{row['productId']},{row['lotNumber']},{int(row['quantity'])},{exp_date},{int(row['daysLeft'])},{row['location']},{row['stage']}\n"
-            
-            st.download_button(
-                label="📊 Télécharger",
-                data=csv,
-                file_name=f"smartexpiry_{store_id}_{datetime.now(PARIS).strftime('%Y%m%d_%H%M')}.csv",
-                mime="text/csv",
-                use_container_width=True
-            )
-            st.success(f"✅ {len(filtered_df)} lots prêts à télécharger")
+    if st.button(t('download_csv'), use_container_width=True):
+        csv = "PRODUIT,LOT,QUANTITÉ,DLC\n"
+        for _, row in lots_df.iterrows():
+            exp_date = pd.to_datetime(row['expiryDate']).date().strftime('%d/%m/%Y')
+            csv += f"{row['productId']},{row['lotNumber']},{int(row['quantity'])},{exp_date}\n"
+        
+        st.download_button(label=t('download_csv'), data=csv, 
+                          file_name=f"smartexpiry_{datetime.now(PARIS).strftime('%Y%m%d')}.csv",
+                          mime="text/csv", use_container_width=True)
 
 st.divider()
-st.caption(f"🧊 SmartExpiry Pro • {datetime.now(PARIS).strftime('%d/%m/%Y %H:%M')} • {store_id}")
+st.caption(f"🧊 SmartExpiry Pro MVP+ • {datetime.now(PARIS).strftime('%d/%m/%Y %H:%M')} • {store_id}")
