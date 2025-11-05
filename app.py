@@ -125,7 +125,72 @@ st.markdown("""
   --border: #E5E7EB;
 }
 
+/* ═══════════════════════════════════════════════════════════════ */
+/* SCROLLBAR - SUPER VISIBLE */
+/* ═══════════════════════════════════════════════════════════════ */
+
+/* Pour Chrome, Edge, Safari */
+::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #E02424 0%, #F97316 100%);
+  border-radius: 10px;
+  border: 2px solid #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #C91C1C 0%, #EA580C 100%);
+  box-shadow: 0 0 6px rgba(224, 36, 36, 0.4);
+}
+
+/* Pour Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #E02424 #f1f1f1;
+}
+
+/* Main content area */
+[data-testid="stAppViewContainer"] {
+  scrollbar-width: thin;
+  scrollbar-color: #E02424 #f1f1f1;
+}
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
+
+html {
+  scrollbar-width: thin;
+  scrollbar-color: #E02424 #f1f1f1;
+}
+
+body {
+  scrollbar-width: thin;
+  scrollbar-color: #E02424 #f1f1f1;
+}
+
+html::-webkit-scrollbar {
+  width: 14px;
+}
+
+html::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+html::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #E02424 0%, #F97316 100%);
+  border-radius: 10px;
+}
+
+html::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #C91C1C 0%, #EA580C 100%);
+}
 
 html, body, [data-testid="stAppViewContainer"] {
   background: linear-gradient(135deg, #FAFAFA 0%, #F3F4F6 100%);
