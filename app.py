@@ -71,6 +71,11 @@ LANG = {
         "notifications": "🔔 Notifications", "push_enabled": "Notifications Push activées",
         "performance": "Performance", "loss_rate": "Taux de perte", "saved": "Économies",
         "multi_store": "📊 Multi-Magasins", "compare_stores": "Comparer les magasins",
+        "removed_msg": "✅ Retiré du rayon !", "signaled_msg": "📤 Signalé au manager !",
+        "reset_btn": "🔄 Réinitialiser", "product": "📦 Produit", "location": "📍 Rayon",
+        "all_products": "🔄 Tous", "at_risk_qty": "⚠️ Quantité à risque", "loss_pct": "📉 Taux de perte",
+        "potential_savings": "💰 Économies potentielles", "avg_days": "⏳ Jours moyens",
+        "detailed_analysis": "📊 Analyse détaillée par rayon",
     },
     "EN": {
         "title": "SmartExpiry Pro", "subtitle": "Intelligent FEFO Management • Automatic Alerts • Zero Waste",
@@ -92,6 +97,11 @@ LANG = {
         "notifications": "🔔 Notifications", "push_enabled": "Push Notifications Enabled",
         "performance": "Performance", "loss_rate": "Loss Rate", "saved": "Savings",
         "multi_store": "📊 Multi-Stores", "compare_stores": "Compare Stores",
+        "removed_msg": "✅ Removed from shelves!", "signaled_msg": "📤 Reported to manager!",
+        "reset_btn": "🔄 Reset", "product": "📦 Product", "location": "📍 Shelves",
+        "all_products": "🔄 All", "at_risk_qty": "⚠️ At Risk Quantity", "loss_pct": "📉 Loss Rate %",
+        "potential_savings": "💰 Potential Savings", "avg_days": "⏳ Average Days",
+        "detailed_analysis": "📊 Detailed Analysis by Shelves",
     }
 }
 
@@ -435,16 +445,44 @@ def create_push_notifications(lots_df):
 # SIDEBAR
 # ═════════════════════════════════════════════════════════════════════════
 
+st.markdown("""
+<style>
+/* LANGUAGE BUTTONS - SUPER VISIBLE EN HAUT DE LA SIDEBAR */
+.stButton button {
+  transition: all 200ms ease;
+}
+
+/* Spécial pour les boutons langue */
+[data-testid="stSidebar"] button {
+  font-weight: 800 !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# ═════════════════════════════════════════════════════════════════════════
+# SIDEBAR
+# ═════════════════════════════════════════════════════════════════════════
+
 with st.sidebar:
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("🇫🇷 FR"):
+    # 🌐 LANGUAGE SWITCHER - EN HAUT ET BIEN VISIBLE
+    st.markdown("## 🌐 LANGUE / LANGUAGE")
+    st.markdown("**Sélectionne ta langue / Select your language**")
+    
+    col_lang1, col_lang2 = st.columns(2)
+    with col_lang1:
+        if st.button("🇫🇷\n**FRANÇAIS**", key="lang_fr", use_container_width=True, help="Passer en Français"):
             st.session_state.lang = "FR"
             st.rerun()
-    with col2:
-        if st.button("🇬🇧 EN"):
+    with col_lang2:
+        if st.button("🇬🇧\n**ENGLISH**", key="lang_en", use_container_width=True, help="Switch to English"):
             st.session_state.lang = "EN"
             st.rerun()
+    
+    # Affiche la langue actuelle
+    if st.session_state.lang == "FR":
+        st.success("✅ Mode: FRANÇAIS 🇫🇷")
+    else:
+        st.success("✅ Mode: ENGLISH 🇬🇧")
     
     st.divider()
     
@@ -593,11 +631,11 @@ if st.session_state.show_detail and st.session_state.detail_stage:
         
         with col2:
             if st.button(t('removed'), key=f"rem_{row['id']}", use_container_width=True):
-                st.success("✅ Retiré !")
+                st.success(t('removed_msg'))
         
         with col3:
             if st.button(t('manager'), key=f"mgr_{row['id']}", use_container_width=True):
-                st.info("📤 Signalé !")
+                st.info(t('signaled_msg'))
     
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -615,33 +653,40 @@ with tab1:
         filter_col1, filter_col2, filter_col3, filter_col4 = st.columns(4)
         
         with filter_col1:
-            urgency_filter = st.selectbox(f"⚠️ {t('urgency')}", ["🔄 Tous", "🔴 Urgent (J-3)", "🟠 Alerte (J-7)", "🟡 Planifier (J-30)"], index=0, key="urgency_filter")
+            urgency_options = ["🔄 " + t('all'), "🔴 " + t('urgent') + " (J-3)", "🟠 " + t('alert') + " (J-7)", "🟡 " + t('plan') + " (J-30)"]
+            urgency_filter = st.selectbox(f"⚠️ {t('urgency')}", urgency_options, index=0, key="urgency_filter")
         
         with filter_col2:
             products_list = sorted(lots_df['productId'].unique().tolist())
-            selected_product = st.selectbox(f"📦 Produit", options=["🔄 Tous"] + products_list, index=0, key="product_selector")
+            product_options = ["🔄 " + t('all')] + products_list
+            selected_product = st.selectbox(f"📦 {t('product')}", options=product_options, index=0, key="product_selector")
         
         with filter_col3:
-            locations = ["🔄 Tous"] + sorted(lots_df['location'].unique().tolist())
-            selected_location = st.selectbox(f"📍 Rayon", options=locations, index=0, key="location_filter")
+            location_options = ["🔄 " + t('all')] + sorted(lots_df['location'].unique().tolist())
+            selected_location = st.selectbox(f"📍 {t('location')}", options=location_options, index=0, key="location_filter")
         
         with filter_col4:
-            if st.button("🔄 Réinitialiser", use_container_width=True):
+            if st.button(t('reset_btn'), use_container_width=True):
                 st.rerun()
         
+        # APPLIQUER TOUS LES FILTRES
         filtered_df = lots_df.copy()
         
-        if urgency_filter == "🔴 Urgent (J-3)":
-            filtered_df = filtered_df[filtered_df['stage'] == 'J-3']
-        elif urgency_filter == "🟠 Alerte (J-7)":
-            filtered_df = filtered_df[filtered_df['stage'] == 'J-7']
-        elif urgency_filter == "🟡 Planifier (J-30)":
-            filtered_df = filtered_df[filtered_df['stage'] == 'J-30']
+        # Filtre urgence
+        if urgency_filter != "🔄 " + t('all'):
+            if "J-3" in urgency_filter:
+                filtered_df = filtered_df[filtered_df['stage'] == 'J-3']
+            elif "J-7" in urgency_filter:
+                filtered_df = filtered_df[filtered_df['stage'] == 'J-7']
+            elif "J-30" in urgency_filter:
+                filtered_df = filtered_df[filtered_df['stage'] == 'J-30']
         
-        if selected_product != "🔄 Tous":
+        # Filtre produit
+        if selected_product != "🔄 " + t('all'):
             filtered_df = filtered_df[filtered_df['productId'] == selected_product]
         
-        if selected_location != "🔄 Tous":
+        # Filtre rayon
+        if selected_location != "🔄 " + t('all'):
             filtered_df = filtered_df[filtered_df['location'] == selected_location]
         
         if not filtered_df.empty:
@@ -689,24 +734,24 @@ with tab3:
         
         with col1:
             total_qty_at_risk = int(lots_df[lots_df['stage'].isin(['J-3', 'J-7'])]['quantity'].sum())
-            st.metric("⚠️ Quantité à risque", f"{total_qty_at_risk} unités")
+            st.metric(t('at_risk_qty'), f"{total_qty_at_risk} {t('units')}")
         
         with col2:
             loss_rate = (len(lots_df[lots_df['stage'] == 'J-3']) / len(lots_df) * 100) if len(lots_df) > 0 else 0
-            st.metric("📉 Taux de perte", f"{loss_rate:.1f}%")
+            st.metric(t('loss_pct'), f"{loss_rate:.1f}%")
         
         with col3:
-            saved = int(lots_df[lots_df['stage'] == 'J-7']['quantity'].sum()) * 3  # Estimation
-            st.metric("💰 Économies potentielles", f"€{saved}")
+            saved = int(lots_df[lots_df['stage'] == 'J-7']['quantity'].sum()) * 3
+            st.metric(t('potential_savings'), f"€{saved}")
         
         with col4:
             avg_days = int(lots_df['daysLeft'].mean())
-            st.metric("⏳ Jours moyens", f"{avg_days}j")
+            st.metric(t('avg_days'), f"{avg_days}j")
         
         st.divider()
         
         # Detailed analytics
-        st.markdown("### 📊 Analyse détaillée par rayon")
+        st.markdown(f"### {t('detailed_analysis')}")
         
         if not lots_df.empty:
             rayon_analysis = lots_df.groupby('location').agg({
