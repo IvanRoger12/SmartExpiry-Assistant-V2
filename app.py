@@ -362,13 +362,13 @@ html, body, [data-testid="stAppViewContainer"] {
 def call_openai_api(messages, system_prompt):
     """Appel à l'API OpenAI"""
     try:
-        api_key = st.secrets.get("openai_api_key", "")
+        api_key = st.secrets["openai"]["api_key"]
         if not api_key:
             return "⚠️ Clé API OpenAI manquante. Configure les secrets Streamlit."
         
         headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
         data = {
-            "model": "gpt-4-mini",
+            "model": "gpt-3.5-turbo",
             "max_tokens": 500,
             "messages": [{"role": "system", "content": system_prompt}] + messages
         }
@@ -495,10 +495,10 @@ def generate_pdf_report(df, stage, store_id):
 def send_email_with_pdf(pdf_bytes, stage, store_id, recipient_email):
     """Envoie le PDF par email"""
     try:
-        sender_email = st.secrets.email.get("from", "nfindaroger@gmail.com")
-        sender_password = st.secrets.email.get("password", "")
-        smtp_host = st.secrets.email.get("host", "smtp.sendgrid.net")
-        smtp_port = int(st.secrets.email.get("port", 587))
+        sender_email = st.secrets["email"]["from"]
+        sender_password = st.secrets["email"]["password"]
+        smtp_host = st.secrets["email"]["host"]
+        smtp_port = int(st.secrets["email"]["port"])
         
         # Create message
         msg = MIMEMultipart()
@@ -873,7 +873,7 @@ if st.session_state.show_detail and st.session_state.detail_stage:
     # BOUTON ENVOYER PDF
     col_pdf1, col_pdf2, col_pdf3 = st.columns([1, 1, 2])
     with col_pdf1:
-        email_recipient = st.text_input("📧 Email destinataire", value=st.secrets.email.get("to", ""), key="pdf_email")
+        email_recipient = st.text_input("📧 Email destinataire", value=st.secrets["email"].get("to", ""), key="pdf_email")
     with col_pdf2:
         if st.button("📨 Envoyer PDF par mail", use_container_width=True):
             detail_df_for_pdf = lots_df[lots_df["stage"] == st.session_state.detail_stage].copy()
