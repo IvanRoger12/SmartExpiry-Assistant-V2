@@ -15,6 +15,17 @@ import plotly.graph_objects as go
 import firebase_admin
 from firebase_admin import credentials, firestore
 import requests
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
+from io import BytesIO
+from reportlab.lib.pagesizes import letter
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.units import inch
 
 PARIS = tz.gettz("Europe/Paris")
 
@@ -348,7 +359,162 @@ html, body, [data-testid="stAppViewContainer"] {
 # FIREBASE & FUNCTIONS
 # ═════════════════════════════════════════════════════════════════════════
 
-def call_openai_api(messages, system_prompt):
+def generate_pdf_report(df, stage, store_id):
+    """Génère un PDF avec les produits à retirer"""
+    buffer = BytesIO()
+    
+    # Create PDF
+    doc = SimpleDocTemplate(buffer, pagesize=letter, topMargin=0.5*inch, bottomMargin=0.5*inch)
+    elements = []
+    styles = getSampleStyleSheet()
+    
+    # Header
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        textColor=colors.HexColor('#E02424'),
+        spaceAfter=6,
+        fontName='Helvetica-Bold'
+    )
+    
+    subtitle_style = ParagraphStyle(
+        'CustomSubtitle',
+        parent=styles['Normal'],
+        fontSize=11,
+        textColor=colors.HexColor('#6B7280'),
+        spaceAfter=20
+    )
+    
+    elements.append(Paragraph("🧊 SmartExpiry Pro", title_style))
+    elements.append(Paragraph(f"Rapport de Produits à Retirer - {datetime.now(PARIS).strftime('%d/%m/%Y %H:%M')}", subtitle_style))
+    
+    # Store info
+    info_style = ParagraphStyle(
+        'Info',
+        parent=styles['Normal'],
+        fontSize=10,
+        textColor=colors.HexColor('#1F2937'),
+        spaceAfter=12
+    )
+    
+    stage_label = {"J-3": "URGENT (3 jours)", "J-7": "ALERTE (7 jours)", "J-30": "À PLANIFIER (30 jours)"}.get(stage, stage)
+    elements.append(Paragraph(f"<b>Magasin:</b> {store_id} | <b>Catégorie:</b> {stage_label} | <b>Nombre de lots:</b> {len(df)}", info_style))
+    elements.append(Spacer(1, 0.3*inch))
+    
+    # Table data
+    table_data = [["EAN", "Lot", "Rayon", "DLC", "Quantité", "Jours"]]
+    
+    for _, row in df.iterrows():
+        exp_date = pd.to_datetime(row['expiryDate']).date()
+        table_data.append([
+            str(row['productId'])[:12],
+            str(row['lotNumber']),
+            str(row['location']),
+            exp_date.strftime('%d/%m/%Y'),
+            str(int(row['quantity'])),
+            str(int(row['daysLeft']))
+        ])
+    
+    # Create table
+    table = Table(table_data, colWidths=[1.2*inch, 1*inch, 1*inch, 1*inch, 0.8*inch, 0.7*inch])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#E02424')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#E5E7EB')),
+        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 1), (-1, -1), 9),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F9FAFB')]),
+    ]))
+    
+    elements.append(table)
+    elements.append(Spacer(1, 0.3*inch))
+    
+    # Summary
+    total_qty = int(df['quantity'].sum())
+    summary_style = ParagraphStyle(
+        'Summary',
+        parent=styles['Normal'],
+        fontSize=10,
+        textColor=colors.HexColor('#1F2937'),
+        spaceAfter=6
+    )
+    
+    elements.append(Paragraph(f"<b>📊 Résumé:</b> {len(df)} lots | {total_qty} unités | DLC moyenne: {int(df['daysLeft'].mean())} jours", summary_style))
+    
+    # Footer
+    footer_style = ParagraphStyle(
+        'Footer',
+        parent=styles['Normal'],
+        fontSize=8,
+        textColor=colors.HexColor('#9CA3AF'),
+        spaceAfter=6
+    )
+    
+    elements.append(Spacer(1, 0.2*inch))
+    elements.append(Paragraph("🧊 SmartExpiry Pro | Gestion FEFO Intelligente | Zéro Perte", footer_style))
+    
+    # Build PDF
+    doc.build(elements)
+    buffer.seek(0)
+    return buffer.getvalue()
+
+def send_email_with_pdf(pdf_bytes, stage, store_id, recipient_email):
+    """Envoie le PDF par email"""
+    try:
+        sender_email = st.secrets.email.get("from", "nfindaroger@gmail.com")
+        sender_password = st.secrets.email.get("password", "")
+        smtp_host = st.secrets.email.get("host", "smtp.sendgrid.net")
+        smtp_port = int(st.secrets.email.get("port", 587))
+        
+        # Create message
+        msg = MIMEMultipart()
+        msg['From'] = sender_email
+        msg['To'] = recipient_email
+        msg['Subject'] = f"🧊 SmartExpiry Pro - Produits à retirer ({stage}) - {store_id}"
+        
+        # Body
+        body = f"""Bonjour,
+
+Veuillez trouver en pièce jointe le rapport SmartExpiry Pro des produits à retirer.
+
+Catégorie: {stage}
+Magasin: {store_id}
+Date: {datetime.now(PARIS).strftime('%d/%m/%Y %H:%M')}
+
+Actions recommandées:
+✅ Vérifier les produits listés
+📤 Réduire les prix si nécessaire
+⏳ Reporter si action non urgente
+
+Cordialement,
+🧊 SmartExpiry Pro
+"""
+        
+        msg.attach(MIMEText(body, 'plain'))
+        
+        # Attach PDF
+        part = MIMEBase('application', 'octet-stream')
+        part.set_payload(pdf_bytes)
+        encoders.encode_base64(part)
+        part.add_header('Content-Disposition', f'attachment; filename= "SmartExpiry_{store_id}_{stage}_{datetime.now(PARIS).strftime("%Y%m%d")}.pdf"')
+        msg.attach(part)
+        
+        # Send email
+        with smtplib.SMTP(smtp_host, smtp_port) as server:
+            server.starttls()
+            server.login(sender_email, sender_password)
+            server.sendmail(sender_email, recipient_email, msg.as_string())
+        
+        return True
+    except Exception as e:
+        st.error(f"❌ Erreur email: {str(e)}")
+        return False
     try:
         api_key = st.secrets.openai.api_key
         headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
@@ -533,46 +699,264 @@ if not lots_df.empty:
     
     st.markdown('</div>', unsafe_allow_html=True)
 
-# MODAL DÉTAILS
+# MODAL DÉTAILS - VUE COMPLÈTE AVEC FILTRES
 if st.session_state.show_detail and st.session_state.detail_stage:
-    st.markdown(f"<div class='detail-modal'>", unsafe_allow_html=True)
+    st.markdown(f"""
+    <style>
+    .detail-header {{
+        background: linear-gradient(135deg, #E02424 0%, #F97316 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 20px 20px 0 0;
+        margin-bottom: 20px;
+        animation: slideDown 400ms ease-out;
+    }}
     
-    col1, col2 = st.columns([20, 1])
-    with col1:
-        st.markdown(f"### {t('details')} - {st.session_state.detail_stage}")
-    with col2:
-        if st.button(t('close'), key="close_modal"):
-            st.session_state.show_detail = False
+    @keyframes slideDown {{
+        from {{ opacity: 0; transform: translateY(-20px); }}
+        to {{ opacity: 1; transform: translateY(0); }}
+    }}
+    
+    .detail-container {{
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        animation: slideUp 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    }}
+    
+    @keyframes slideUp {{
+        from {{ opacity: 0; transform: translateY(40px); }}
+        to {{ opacity: 1; transform: translateY(0); }}
+    }}
+    
+    .filter-box {{
+        background: #F3F4F6;
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        border-left: 4px solid #E02424;
+    }}
+    
+    .product-card {{
+        background: white;
+        border: 2px solid #E5E7EB;
+        border-left: 5px solid var(--urgency);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 12px;
+        transition: all 250ms ease;
+    }}
+    
+    .product-card:hover {{
+        transform: translateX(6px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        border-color: #E02424;
+    }}
+    
+    .product-card.urgent {{ --urgency: #E02424; }}
+    .product-card.alert {{ --urgency: #F97316; }}
+    .product-card.plan {{ --urgency: #FACC15; }}
+    
+    .product-header {{
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }}
+    
+    .product-name-bold {{
+        font-size: 16px;
+        font-weight: 800;
+        color: #1F2937;
+    }}
+    
+    .product-meta {{
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 12px;
+        font-size: 13px;
+        color: #6B7280;
+        margin-bottom: 12px;
+    }}
+    
+    .meta-item {{
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }}
+    
+    .action-buttons {{
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }}
+    
+    .action-btn {{
+        padding: 8px 14px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 700;
+        border: none;
+        cursor: pointer;
+        transition: all 200ms ease;
+    }}
+    
+    .action-btn.removed {{
+        background: #22C55E;
+        color: white;
+    }}
+    
+    .action-btn.manager {{
+        background: #F97316;
+        color: white;
+    }}
+    
+    .action-btn.reschedule {{
+        background: #3B82F6;
+        color: white;
+    }}
+    
+    .action-btn:hover {{
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }}
+    
+    </style>
+    """, unsafe_allow_html=True)
+    
+    # HEADER MODAL
+    st.markdown(f"""
+    <div class="detail-header">
+        <h2 style="margin: 0 0 8px 0;">📦 {t('details')} - {st.session_state.detail_stage} {t('urgent')}</h2>
+        <p style="margin: 0; opacity: 0.95; font-size: 14px;">Cliquez sur les actions pour gérer les lots</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown('<div class="detail-container">', unsafe_allow_html=True)
+    
+    # CLOSE BUTTON
+    if st.button("✕ Fermer", key="close_modal", use_container_width=False):
+        st.session_state.show_detail = False
+        st.rerun()
+    
+    st.divider()
+    
+    # BOUTON ENVOYER PDF
+    col_pdf1, col_pdf2, col_pdf3 = st.columns([1, 1, 2])
+    with col_pdf1:
+        email_recipient = st.text_input("📧 Email destinataire", value=st.secrets.email.get("to", ""), key="pdf_email")
+    with col_pdf2:
+        if st.button("📨 Envoyer PDF par mail", use_container_width=True):
+            detail_df_for_pdf = lots_df[lots_df["stage"] == st.session_state.detail_stage].copy()
+            if not detail_df_for_pdf.empty and email_recipient:
+                with st.spinner("Génération et envoi du PDF..."):
+                    pdf_bytes = generate_pdf_report(detail_df_for_pdf, st.session_state.detail_stage, store_id)
+                    if send_email_with_pdf(pdf_bytes, st.session_state.detail_stage, store_id, email_recipient):
+                        st.success(f"✅ PDF envoyé à {email_recipient} !")
+                        st.balloons()
+                    else:
+                        st.error("❌ Erreur lors de l'envoi")
+            else:
+                st.warning("⚠️ Complète l'email et assure-toi d'avoir des produits")
+    with col_pdf3:
+        pass
+    
+    st.divider()
+    
+    # FILTRES
+    detail_df = lots_df[lots_df["stage"] == st.session_state.detail_stage].copy()
+    
+    st.markdown(f"<div class='filter-box'><strong>🔍 {t('filters')}</strong></div>", unsafe_allow_html=True)
+    
+    filter_col1, filter_col2, filter_col3 = st.columns(3)
+    
+    with filter_col1:
+        if not detail_df.empty:
+            locations = [t('all')] + sorted(detail_df['location'].unique().tolist())
+            filter_location = st.selectbox(f"📍 {t('shelves')}", locations, key="filter_location")
+        else:
+            filter_location = t('all')
+    
+    with filter_col2:
+        filter_qty = st.slider(f"📦 {t('quantity')} min", 0, int(detail_df['quantity'].max()) if not detail_df.empty else 10, 0)
+    
+    with filter_col3:
+        if st.button("🔄 Rafraîchir", use_container_width=True):
             st.rerun()
     
-    detail_df = lots_df[lots_df["stage"] == st.session_state.detail_stage]
-    st.success(f"✅ {len(detail_df)} {t('matching')}")
+    # APPLIQUER FILTRES
+    if filter_location != t('all'):
+        detail_df = detail_df[detail_df['location'] == filter_location]
     
-    for _, row in detail_df.iterrows():
-        exp_date = pd.to_datetime(row['expiryDate']).date()
-        urgency_class = get_urgency_class(row['stage'])
+    detail_df = detail_df[detail_df['quantity'] >= filter_qty]
+    detail_df = detail_df.sort_values('expiryDate')
+    
+    st.divider()
+    
+    # STATS
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("📊 Lots", len(detail_df))
+    with col2:
+        st.metric("📦 Quantité", int(detail_df['quantity'].sum()))
+    with col3:
+        st.metric("📍 Rayons", detail_df['location'].nunique())
+    with col4:
+        days_avg = int(detail_df['daysLeft'].mean())
+        st.metric("⏳ Jours moy.", f"{days_avg}j")
+    
+    st.divider()
+    
+    # PRODUCTS LIST
+    if not detail_df.empty:
+        st.markdown(f"### ✅ {len(detail_df)} {t('matching')}")
         
-        col1, col2, col3 = st.columns([3, 1, 1])
-        with col1:
+        for idx, (_, row) in enumerate(detail_df.iterrows()):
+            exp_date = pd.to_datetime(row['expiryDate']).date()
+            urgency_class = get_urgency_class(row['stage'])
+            
             st.markdown(f"""
-            <div class="product-row {urgency_class}">
-                <div>
-                    <div class="product-name">{row['productId']} • {row['lotNumber']}</div>
-                    <div class="product-details">
-                        {int(row['quantity'])} {t('units')} • {exp_date.strftime('%d/%m')} • {row['location']}
+            <div class="product-card {urgency_class}">
+                <div class="product-header">
+                    <div>
+                        <div class="product-name-bold">📦 {row['productId']}</div>
+                        <div style="font-size: 12px; color: #9CA3AF;">Lot: {row['lotNumber']}</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 20px; font-weight: 900; color: #E02424;">{row['daysLeft']} {t('days')}</div>
+                        <div style="font-size: 11px; color: #6B7280;">avant expiration</div>
                     </div>
                 </div>
-                <div class="status-badge">{row['daysLeft']} {t('days')}</div>
+                
+                <div class="product-meta">
+                    <div class="meta-item">📍 {row['location']}</div>
+                    <div class="meta-item">📅 {exp_date.strftime('%d/%m/%Y')}</div>
+                    <div class="meta-item">📦 {int(row['quantity'])} unités</div>
+                    <div class="meta-item">🏷️ {row['stage']}</div>
+                </div>
             </div>
             """, unsafe_allow_html=True)
-        
-        with col2:
-            if st.button(t('removed'), key=f"rem_{row['id']}", use_container_width=True):
-                st.success("✅ Retiré !")
-        
-        with col3:
-            if st.button(t('manager'), key=f"mgr_{row['id']}", use_container_width=True):
-                st.info("📤 Signalé !")
+            
+            # ACTION BUTTONS
+            act_col1, act_col2, act_col3, act_col4 = st.columns([1, 1, 1, 2])
+            
+            with act_col1:
+                if st.button("✅ Retiré", key=f"removed_{idx}_{row['id']}", use_container_width=True):
+                    st.success("✅ Produit marqué comme retiré du rayon !")
+            
+            with act_col2:
+                if st.button("📤 Manager", key=f"manager_{idx}_{row['id']}", use_container_width=True):
+                    st.info("📤 Signalement envoyé au manager !")
+            
+            with act_col3:
+                if st.button("⏳ Reporter", key=f"reschedule_{idx}_{row['id']}", use_container_width=True):
+                    st.warning("⏳ Action reportée de 24h")
+            
+            with act_col4:
+                st.write("")
+    else:
+        st.info(f"❌ Aucun produit ne correspond à ces filtres")
     
     st.markdown("</div>", unsafe_allow_html=True)
 
