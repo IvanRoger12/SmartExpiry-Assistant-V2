@@ -1,18 +1,9 @@
 """
 ╔════════════════════════════════════════════════════════════════════════╗
-║         🧊 SMARTEXPIRY PRO - VERSION CHATGPT PRODUCTION               ║
-║              Gestion FEFO • ChatGPT • Design Retail Pro              ║
-║                    READY FOR DEMO - NOV 5, 2025                      ║
+║         🧊 SMARTEXPIRY PRO - DESIGN PREMIUM RETAIL EDITION             ║
+║              Gestion FEFO • ChatGPT • Design Ultra Pro                  ║
+║                    LINKEDIN WORTHY - NOV 5, 2025                       ║
 ╚════════════════════════════════════════════════════════════════════════╝
-
-FEATURES:
-✅ 272 lots en temps réel
-✅ Alertes colorisées (J-3 rouge, J-7 orange, J-30 jaune)
-✅ Email automatique
-✅ Export CSV
-✅ 🤖 Chatbot ChatGPT intégré
-✅ Design Retail Pro
-✅ Responsive
 """
 
 import streamlit as st
@@ -38,7 +29,377 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# OpenAI API call via requests (no client library needed)
+# ═════════════════════════════════════════════════════════════════════════
+# DESIGN SYSTEM - ULTRA PREMIUM RETAIL
+# ═════════════════════════════════════════════════════════════════════════
+
+st.markdown("""
+<style>
+:root {
+  --primary: #E30613;
+  --secondary: #F39200;
+  --accent: #00B050;
+  --dark: #1A1A1A;
+  --light: #F8F8F8;
+  --border: #E5E5E5;
+  --shadow: 0 8px 24px rgba(0,0,0,0.12);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, [data-testid="stAppViewContainer"] {
+  background: linear-gradient(135deg, #FAFAFA 0%, #F5F5F5 100%);
+  color: var(--dark);
+  font-family: 'Segoe UI', 'Inter', -apple-system, sans-serif;
+}
+
+[data-testid="stSidebar"] {
+  background: linear-gradient(180deg, var(--dark) 0%, #2A2A2A 100%) !important;
+}
+
+.block-container {
+  padding: 40px 32px !important;
+  max-width: 1600px !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════ */
+/* HERO SECTION */
+/* ═══════════════════════════════════════════════════════════════ */
+
+.header-hero {
+  background: linear-gradient(135deg, var(--primary) 0%, #C20410 50%, var(--secondary) 100%);
+  border-radius: 20px;
+  padding: 60px 40px;
+  margin-bottom: 50px;
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+.header-hero::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -10%;
+  width: 400px;
+  height: 400px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 50%;
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+.header-content {
+  position: relative;
+  z-index: 1;
+  color: white;
+  text-align: center;
+}
+
+.header-title {
+  font-size: 56px;
+  font-weight: 800;
+  letter-spacing: -1.5px;
+  margin-bottom: 12px;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.header-subtitle {
+  font-size: 18px;
+  font-weight: 500;
+  opacity: 0.95;
+  letter-spacing: 0.5px;
+}
+
+/* ═══════════════════════════════════════════════════════════════ */
+/* KPI CARDS - PREMIUM */
+/* ═══════════════════════════════════════════════════════════════ */
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 24px;
+  margin: 50px 0;
+}
+
+.kpi-card {
+  background: white;
+  border-radius: 16px;
+  padding: 32px 24px;
+  box-shadow: var(--shadow-sm);
+  transition: all 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  border: 2px solid transparent;
+  position: relative;
+  overflow: hidden;
+}
+
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+}
+
+.kpi-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.15);
+  border-color: var(--primary);
+}
+
+.kpi-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  display: block;
+}
+
+.kpi-label {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: #888;
+  margin-bottom: 12px;
+}
+
+.kpi-value {
+  font-size: 42px;
+  font-weight: 900;
+  color: var(--primary);
+  margin-bottom: 8px;
+  line-height: 1;
+}
+
+.kpi-meta {
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+}
+
+/* ═══════════════════════════════════════════════════════════════ */
+/* PRODUCT ROWS - PREMIUM */
+/* ═══════════════════════════════════════════════════════════════ */
+
+.product-row {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 16px;
+  border-left: 5px solid var(--urgency-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: var(--shadow-sm);
+  transition: all 250ms ease;
+  position: relative;
+}
+
+.product-row::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 0;
+  background: rgba(227, 6, 19, 0.05);
+  border-radius: 0 0 12px 12px;
+  transition: height 250ms ease;
+}
+
+.product-row:hover {
+  transform: translateX(8px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.12);
+}
+
+.product-row.urgent { --urgency-color: #E30613; }
+.product-row.alert { --urgency-color: #F39200; }
+.product-row.plan { --urgency-color: #FFD700; }
+.product-row.ok { --urgency-color: #00B050; }
+
+.product-info {
+  flex: 1;
+  z-index: 1;
+}
+
+.product-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--dark);
+  margin-bottom: 12px;
+}
+
+.product-details {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: #666;
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.status-badge {
+  background: linear-gradient(135deg, var(--urgency-color), var(--urgency-color));
+  color: white;
+  padding: 10px 18px;
+  border-radius: 50px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(227, 6, 19, 0.25);
+  letter-spacing: 0.5px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 4px 12px rgba(227, 6, 19, 0.25); }
+  50% { box-shadow: 0 8px 20px rgba(227, 6, 19, 0.4); }
+}
+
+/* ═══════════════════════════════════════════════════════════════ */
+/* BUTTONS */
+/* ═══════════════════════════════════════════════════════════════ */
+
+.stButton button {
+  background: linear-gradient(135deg, var(--primary) 0%, #C20410 100%) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 10px !important;
+  padding: 14px 28px !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.5px !important;
+  transition: all 200ms cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  box-shadow: 0 6px 20px rgba(227, 6, 19, 0.3) !important;
+  min-height: 44px !important;
+  text-transform: uppercase;
+}
+
+.stButton button:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 10px 32px rgba(227, 6, 19, 0.45) !important;
+}
+
+.stButton button:active {
+  transform: translateY(-1px) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════ */
+/* TABS */
+/* ═══════════════════════════════════════════════════════════════ */
+
+.stTabs [data-baseweb="tab-list"] {
+  border-bottom: 2px solid var(--border) !important;
+  gap: 32px !important;
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+.stTabs [aria-selected="true"] {
+  border-bottom: 3px solid var(--primary) !important;
+  color: var(--primary) !important;
+  font-weight: 800 !important;
+  font-size: 16px !important;
+}
+
+.stTabs [aria-selected="false"] {
+  color: #999 !important;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════ */
+/* SIDEBAR */
+/* ═══════════════════════════════════════════════════════════════ */
+
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] {
+  color: white !important;
+}
+
+[data-testid="stSidebar"] h3 {
+  color: white !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.5px !important;
+}
+
+[data-testid="stSidebar"] p {
+  color: rgba(255,255,255,0.85) !important;
+}
+
+[data-testid="stSidebar"] input,
+[data-testid="stSidebar"] select {
+  background: rgba(255,255,255,0.1) !important;
+  border: 1px solid rgba(255,255,255,0.2) !important;
+  color: white !important;
+  border-radius: 8px !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════ */
+/* SECTION TITLES */
+/* ═══════════════════════════════════════════════════════════════ */
+
+.section-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--dark);
+  margin: 40px 0 20px 0;
+  padding-bottom: 16px;
+  border-bottom: 3px solid var(--primary);
+  letter-spacing: -0.5px;
+}
+
+/* ═══════════════════════════════════════════════════════════════ */
+/* RESPONSIVE */
+/* ═══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  .header-hero {
+    padding: 40px 24px;
+  }
+  
+  .header-title {
+    font-size: 36px;
+  }
+  
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .product-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .status-badge {
+    margin-top: 12px;
+    align-self: flex-end;
+  }
+  
+  .product-details {
+    gap: 12px;
+  }
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+# OpenAI API call
 def call_openai_api(messages, system_prompt):
     """Appel direct à l'API OpenAI via requests"""
     try:
@@ -73,208 +434,18 @@ def call_openai_api(messages, system_prompt):
         st.error(f"❌ Erreur OpenAI: {str(e)}")
         return None
 
-# Initialize chat history for ChatGPT
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-# ═════════════════════════════════════════════════════════════════════════
-# DESIGN SYSTEM - RETAIL PRO FINAL
-# ═════════════════════════════════════════════════════════════════════════
-
-st.markdown("""
-<style>
-:root {
-  --primary: #E30613;
-  --secondary: #F39200;
-  --success: #2BA84F;
-  --bg: #F5F5F5;
-  --white: #FFFFFF;
-  --text: #1A1A1A;
-  --text-light: #666666;
-  --border: #EEEEEE;
-}
-
-* { margin: 0; padding: 0; box-sizing: border-box; }
-
-html, body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: 'Inter', 'Segoe UI', sans-serif;
-}
-
-.block-container {
-  padding: 48px 24px !important;
-  max-width: 1400px !important;
-}
-
-.main-title {
-  text-align: center;
-  font-size: 56px;
-  font-weight: 900;
-  color: var(--text);
-  margin: 0 0 8px 0;
-  letter-spacing: -2px;
-  line-height: 1.1;
-}
-
-.main-subtitle {
-  text-align: center;
-  font-size: 18px;
-  color: var(--text-light);
-  margin: 0 0 48px 0;
-  font-weight: 500;
-  letter-spacing: 0.5px;
-}
-
-.hero {
-  background: linear-gradient(135deg, rgba(227, 6, 19, 0.05) 0%, rgba(243, 157, 0, 0.03) 100%);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 32px 24px;
-  margin-bottom: 48px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-}
-
-.hero h2 {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--primary);
-  margin-bottom: 8px;
-}
-
-.hero p {
-  font-size: 16px;
-  color: var(--text-light);
-  margin: 0;
-}
-
-.kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 20px;
-  margin-bottom: 40px;
-}
-
-.kpi-card {
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-  transition: all 200ms ease;
-  text-align: center;
-}
-
-.kpi-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-  border-color: var(--primary);
-}
-
-.kpi-icon { font-size: 32px; margin-bottom: 12px; }
-.kpi-label { font-size: 11px; color: var(--text-light); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
-.kpi-value { font-size: 36px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
-.kpi-meta { font-size: 13px; color: var(--text-light); }
-
-.product-row {
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-left: 6px solid var(--urgency);
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 12px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  transition: all 200ms ease;
-}
-
-.product-row:hover {
-  transform: translateX(4px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-}
-
-.product-row.j3 { --urgency: var(--primary); }
-.product-row.j7 { --urgency: var(--secondary); }
-.product-row.j30 { --urgency: #FFD700; }
-.product-row.ok { --urgency: var(--success); }
-
-.product-info { flex: 1; }
-.product-name { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
-.product-details { display: flex; gap: 20px; flex-wrap: wrap; font-size: 13px; color: var(--text-light); }
-.detail-item { display: flex; align-items: center; gap: 4px; font-weight: 600; }
-.status-badge { background: var(--urgency); color: white; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-
-.stButton button {
-  background: linear-gradient(135deg, var(--primary) 0%, #C20410 100%) !important;
-  color: white !important;
-  border: none !important;
-  border-radius: 8px !important;
-  padding: 12px 24px !important;
-  font-size: 14px !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.5px !important;
-  transition: all 150ms !important;
-  box-shadow: 0 4px 12px rgba(227, 6, 19, 0.2) !important;
-  min-height: 40px !important;
-}
-
-.stButton button:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 6px 20px rgba(227, 6, 19, 0.3) !important;
-}
-
-.stTabs [data-baseweb="tab-list"] {
-  border-bottom: 2px solid var(--border) !important;
-  gap: 24px !important;
-  background: transparent !important;
-}
-
-.stTabs [aria-selected="true"] {
-  border-bottom: 3px solid var(--primary) !important;
-  color: var(--primary) !important;
-  font-weight: 700 !important;
-}
-
-.stTabs [aria-selected="false"] {
-  color: var(--text-light) !important;
-  font-weight: 600 !important;
-}
-
-.section-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--text);
-  margin: 32px 0 20px 0;
-  padding-bottom: 12px;
-  border-bottom: 2px solid var(--primary);
-}
-
-@media (max-width: 768px) {
-  .main-title { font-size: 36px; }
-  .product-row { flex-direction: column; align-items: flex-start; }
-  .status-badge { margin-top: 12px; }
-}
-
-</style>
-""", unsafe_allow_html=True)
-
-# ═════════════════════════════════════════════════════════════════════════
-# FIREBASE INITIALIZATION
-# ═════════════════════════════════════════════════════════════════════════
-
+# Firebase
 @st.cache_resource
 def init_firebase():
     try:
         if not firebase_admin._apps:
-            # Récupère les credentials
             creds = dict(st.secrets.firebase)
-            
-            # Nettoie les underscores que Streamlit ajoute
             for key in creds:
                 if isinstance(creds[key], str):
                     creds[key] = creds[key].replace('__', '')
-            
             cred = credentials.Certificate(creds)
             firebase_admin.initialize_app(cred)
         return firestore.client()
@@ -284,10 +455,7 @@ def init_firebase():
 
 db = init_firebase()
 
-# ═════════════════════════════════════════════════════════════════════════
-# UTILITY FUNCTIONS
-# ═════════════════════════════════════════════════════════════════════════
-
+# Utility functions
 def days_until(exp_date):
     try:
         expiry = pd.to_datetime(exp_date).date()
@@ -305,13 +473,13 @@ def stage_from_days(days):
     else:
         return "OK"
 
-def get_color_class(stage):
+def get_urgency_class(stage):
     if stage == "J-3":
-        return "j3"
+        return "urgent"
     elif stage == "J-7":
-        return "j7"
+        return "alert"
     elif stage == "J-30":
-        return "j30"
+        return "plan"
     else:
         return "ok"
 
@@ -379,8 +547,6 @@ def filter_lots(df, search, urgency, location):
     return result
 
 def chat_with_gpt(user_message, lots_data_context):
-    """Chat avec ChatGPT sur les données d'inventaire"""
-    
     st.session_state.chat_history.append({
         "role": "user",
         "content": user_message
@@ -411,10 +577,7 @@ Donne des recommandations pratiques immédiates."""
         st.error("❌ ChatGPT non disponible")
         return None
 
-# ═════════════════════════════════════════════════════════════════════════
-# SIDEBAR - NAVIGATION & CHATGPT
-# ═════════════════════════════════════════════════════════════════════════
-
+# SIDEBAR
 with st.sidebar:
     st.markdown("### ⚙️ CONFIGURATION")
     stores = load_stores()
@@ -455,28 +618,19 @@ with st.sidebar:
         else:
             st.warning("Pas de données disponibles")
 
-# ═════════════════════════════════════════════════════════════════════════
 # MAIN CONTENT
-# ═════════════════════════════════════════════════════════════════════════
-
 lots_df = load_lots(store_id)
 
 st.markdown("""
-<h1 class="main-title">🧊 SmartExpiry Pro</h1>
-<p class="main-subtitle">Gestion FEFO Intelligente • Alertes Automatiques • Zéro Perte</p>
-""", unsafe_allow_html=True)
-
-st.markdown("""
-<div class="hero">
-    <h2>📦 Suivi d'Inventaire en Temps Réel</h2>
-    <p>Alertes colorisées • Email automatique • Export données • Recommandations IA (ChatGPT)</p>
+<div class="header-hero">
+    <div class="header-content">
+        <h1 class="header-title">🧊 SmartExpiry Pro</h1>
+        <p class="header-subtitle">Gestion FEFO Intelligente • Alertes Automatiques • Zéro Perte</p>
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
-# ═════════════════════════════════════════════════════════════════════════
 # KPI DASHBOARD
-# ═════════════════════════════════════════════════════════════════════════
-
 if not lots_df.empty:
     st.markdown('<div class="kpi-grid">', unsafe_allow_html=True)
     
@@ -538,11 +692,8 @@ if not lots_df.empty:
     
     st.markdown('</div>', unsafe_allow_html=True)
 
-# ═════════════════════════════════════════════════════════════════════════
 # FILTERS
-# ═════════════════════════════════════════════════════════════════════════
-
-st.markdown("### 🔍 Filtres")
+st.markdown("<div class='section-title'>🔍 Filtres & Recherche</div>", unsafe_allow_html=True)
 
 filter_col1, filter_col2, filter_col3, filter_col4 = st.columns([2, 1, 1, 1])
 
@@ -568,10 +719,7 @@ if not lots_df.empty:
 else:
     filtered_df = pd.DataFrame()
 
-# ═════════════════════════════════════════════════════════════════════════
 # TABS
-# ═════════════════════════════════════════════════════════════════════════
-
 tab1, tab2, tab3, tab4 = st.tabs([
     "📋 Inventaire",
     "📊 Graphiques",
@@ -580,17 +728,17 @@ tab1, tab2, tab3, tab4 = st.tabs([
 ])
 
 with tab1:
-    st.markdown("### 📋 Liste des Produits")
+    st.markdown("<div class='section-title'>📦 Liste des Produits</div>", unsafe_allow_html=True)
     
     if not filtered_df.empty:
         st.success(f"✅ {len(filtered_df)} lot(s) correspondent")
         
         for _, row in filtered_df.iterrows():
             exp_date = pd.to_datetime(row['expiryDate']).date()
-            color_class = get_color_class(row['stage'])
+            urgency_class = get_urgency_class(row['stage'])
             
             st.markdown(f"""
-            <div class="product-row {color_class}">
+            <div class="product-row {urgency_class}">
                 <div class="product-info">
                     <div class="product-name">📦 {row['productId']} • Lot {row['lotNumber']}</div>
                     <div class="product-details">
@@ -606,7 +754,7 @@ with tab1:
         st.info("❌ Aucun lot ne correspond")
 
 with tab2:
-    st.markdown("### 📊 Visualisations")
+    st.markdown("<div class='section-title'>📊 Visualisations</div>", unsafe_allow_html=True)
     
     if not filtered_df.empty:
         col1, col2 = st.columns(2)
@@ -617,16 +765,23 @@ with tab2:
                 go.Bar(
                     x=stage_counts.index,
                     y=stage_counts.values,
-                    marker=dict(color=['#E30613', '#F39200', '#FFD700', '#2BA84F']),
+                    marker=dict(
+                        color=['#E30613', '#F39200', '#FFD700', '#00B050'],
+                        line=dict(color='white', width=2)
+                    ),
                     text=stage_counts.values,
-                    textposition='outside'
+                    textposition='outside',
+                    textfont=dict(size=14, color='#1A1A1A')
                 )
             ])
             fig1.update_layout(
                 title="Distribution par Urgence",
                 template="plotly_white",
                 height=400,
-                showlegend=False
+                showlegend=False,
+                font=dict(family="Segoe UI", size=12),
+                plot_bgcolor='rgba(248,248,248,1)',
+                paper_bgcolor='white'
             )
             st.plotly_chart(fig1, use_container_width=True)
         
@@ -637,25 +792,30 @@ with tab2:
                     y=filtered_df["quantity"],
                     mode='markers',
                     marker=dict(
-                        size=filtered_df["quantity"] / 3,
+                        size=filtered_df["quantity"] / 2.5,
                         color=filtered_df["daysLeft"],
-                        colorscale=[[0, '#E30613'], [0.5, '#F39200'], [1, '#2BA84F']],
-                        showscale=True
+                        colorscale=[[0, '#E30613'], [0.5, '#F39200'], [1, '#00B050']],
+                        showscale=True,
+                        line=dict(color='white', width=1)
                     ),
-                    text=filtered_df["productId"]
+                    text=filtered_df["productId"],
+                    hovertemplate='<b>%{text}</b><br>Jours: %{x}<br>Quantité: %{y}<extra></extra>'
                 )
             ])
             fig2.update_layout(
                 title="Urgence vs Quantité",
-                xaxis_title="Jours",
-                yaxis_title="Quantité",
+                xaxis_title="Jours restants",
+                yaxis_title="Quantité (unités)",
                 template="plotly_white",
-                height=400
+                height=400,
+                font=dict(family="Segoe UI", size=12),
+                plot_bgcolor='rgba(248,248,248,1)',
+                paper_bgcolor='white'
             )
             st.plotly_chart(fig2, use_container_width=True)
 
 with tab3:
-    st.markdown("### 📧 Envoyer Rapport Email")
+    st.markdown("<div class='section-title'>📧 Envoyer Rapport Email</div>", unsafe_allow_html=True)
     
     if not lots_df.empty:
         st.info(f"📊 {len(lots_df[lots_df['stage'] == 'J-3'])} urgents | {len(lots_df)} lots total")
@@ -663,16 +823,20 @@ with tab3:
     if st.button("📬 Envoyer le rapport", use_container_width=True):
         with st.spinner("Envoi..."):
             try:
-                html = f"""<html><body style="font-family: Arial; background: #F5F5F5; padding: 20px;">
-                <div style="max-width: 600px; background: white; border-radius: 12px; padding: 30px; margin: 0 auto;">
-                    <h1 style="color: #E30613; text-align: center;">🧊 SmartExpiry Pro</h1>
-                    <p style="text-align: center; color: #666;">Rapport - {datetime.now(PARIS).strftime('%d %B %Y')}</p>
-                    <hr style="border: none; border-top: 1px solid #EEE; margin: 20px 0;">
-                    <p><strong>Magasin:</strong> {store_id}</p>
-                    <p><strong>Lots urgents (J-3):</strong> {len(lots_df[lots_df['stage'] == 'J-3'])}</p>
-                    <p><strong>Alertes (J-7):</strong> {len(lots_df[lots_df['stage'] == 'J-7'])}</p>
-                    <p><strong>À planifier (J-30):</strong> {len(lots_df[lots_df['stage'] == 'J-30'])}</p>
-                    <p><strong>Quantité totale:</strong> {int(lots_df['quantity'].sum())} unités</p>
+                html = f"""<html><body style="font-family: 'Segoe UI', Arial; background: #F5F5F5; padding: 20px;">
+                <div style="max-width: 600px; background: white; border-radius: 16px; padding: 40px; margin: 0 auto; box-shadow: 0 8px 24px rgba(0,0,0,0.12);">
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <h1 style="color: #E30613; font-size: 32px; margin: 0 0 8px 0;">🧊 SmartExpiry Pro</h1>
+                        <p style="color: #666; font-size: 14px;">Rapport - {datetime.now(PARIS).strftime('%d %B %Y à %H:%M')}</p>
+                    </div>
+                    <hr style="border: none; border-top: 2px solid #E5E5E5; margin: 30px 0;">
+                    <div style="background: #F8F8F8; padding: 20px; border-radius: 12px; margin: 20px 0;">
+                        <p style="margin: 10px 0;"><strong>🏪 Magasin:</strong> {store_id}</p>
+                        <p style="margin: 10px 0;"><strong>🔴 Lots urgents (J-3):</strong> {len(lots_df[lots_df['stage'] == 'J-3'])}</p>
+                        <p style="margin: 10px 0;"><strong>🟠 Alertes (J-7):</strong> {len(lots_df[lots_df['stage'] == 'J-7'])}</p>
+                        <p style="margin: 10px 0;"><strong>🟡 À planifier (J-30):</strong> {len(lots_df[lots_df['stage'] == 'J-30'])}</p>
+                        <p style="margin: 10px 0;"><strong>📦 Quantité totale:</strong> {int(lots_df['quantity'].sum())} unités</p>
+                    </div>
                 </div>
                 </body></html>"""
                 
@@ -687,13 +851,13 @@ with tab3:
                     server.login(st.secrets.email.username, st.secrets.email.password)
                     server.sendmail(msg["From"], [msg["To"]], msg.as_string())
                 
-                st.success("✅ Email envoyé!")
+                st.success("✅ Email envoyé avec succès !")
                 st.balloons()
             except Exception as e:
                 st.error(f"❌ Erreur: {str(e)}")
 
 with tab4:
-    st.markdown("### 📥 Exporter Données")
+    st.markdown("<div class='section-title'>📥 Exporter Données</div>", unsafe_allow_html=True)
     
     if st.button("⬇️ Télécharger CSV", use_container_width=True):
         if not filtered_df.empty:
@@ -709,7 +873,7 @@ with tab4:
                 mime="text/csv",
                 use_container_width=True
             )
-            st.success(f"✅ {len(filtered_df)} lots")
+            st.success(f"✅ {len(filtered_df)} lots prêts à télécharger")
 
 st.divider()
 st.caption(f"🧊 SmartExpiry Pro • {datetime.now(PARIS).strftime('%d/%m/%Y %H:%M')} • {store_id}")
