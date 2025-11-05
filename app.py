@@ -1007,13 +1007,27 @@ with tab1:
     st.markdown(f"<div class='section-title'>{t('product_list')}</div>", unsafe_allow_html=True)
     
     if not lots_df.empty:
-        search = st.text_input(t('search'), placeholder=t('product_placeholder'))
+        # Créer liste unique des produits
+        products_list = sorted(lots_df['productId'].unique().tolist())
         
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
+            selected_product = st.selectbox(
+                f"🔎 {t('search')} - {len(products_list)} produits disponibles",
+                options=["🔄 Tous les produits"] + products_list,
+                index=0,
+                key="product_selector"
+            )
+        
+        with col2:
+            if st.button("🔄 Réinitialiser", use_container_width=True):
+                st.rerun()
+        
+        # Filtrer selon le produit sélectionné
         filtered_df = lots_df.copy()
-        if search:
-            search_lower = search.lower()
-            mask = (filtered_df['productId'].str.lower().str.contains(search_lower, na=False))
-            filtered_df = filtered_df[mask]
+        if selected_product != "🔄 Tous les produits":
+            filtered_df = filtered_df[filtered_df['productId'] == selected_product]
         
         if not filtered_df.empty:
             st.success(f"✅ {len(filtered_df)} {t('matching')}")
